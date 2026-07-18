@@ -1608,6 +1608,41 @@
       });
     }
 
+    // Global Reset Actions
+    function confirmClearAll() {
+      showCustomConfirm("정말 대사를 전부 삭제하시겠습니까?", () => {
+        state.dialogues = [];
+        commitHistory();
+        renderDialogueList();
+        renderCanvas();
+      });
+    }
+
+    function confirmReset() {
+      showCustomConfirm("모든 설정 및 데이터를 초기화하시겠습니까?\n(사용자 템플릿도 모두 삭제됩니다)", () => {
+        localStorage.removeItem('PLAY_SCRIPT_MAKER_STATE_v5');
+        state = {
+          characters: [{ name: '나레이터', color: '회색' }],
+          dialogues: [
+            { id: '1', char: '나레이터', text: '(희미한 전등 아래, 먼지 쌓인 원고지가 흩뿌려져 있다.)' },
+            { id: '2', char: '나레이터', text: '결국은 우리 모두 무대 위의 연기자일 뿐이오.' }
+          ],
+          config: {
+            width: 1080, height: 1080, fontFamily: "'Gowun Batang', serif", fontSize: 24, nameWidthRatio: 8, lineSpacing: 40,
+            bgColor: '#f5f2eb', fgColor: '#2c221e', paperTexture: 'pulp', pageFooterEnabled: true, footerPosition: 'bottom-right',
+            footerMode: 'unified', footerUnifiedText: '— 헤무대본 제 1장 —', pageTexts: [], autoCrop: false, bgImage: null, bgOpacity: 50
+          },
+          templates: []
+        };
+        initHistory();
+        syncConfigToUI();
+        renderCharacterTags();
+        renderUserTemplates();
+        renderDialogueList();
+        renderCanvas();
+      });
+    }
+
     // --- CUSTOM POPUP & DIALOGS ---
     function showCustomAlert(msg) {
       document.getElementById('alert-title').innerText = '안내';
