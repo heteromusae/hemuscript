@@ -1130,7 +1130,7 @@
 
     function removeCharacter(idx) {
       const targetName = state.characters[idx].name;
-      showCustomConfirm(`"${targetName}" 인물을 삭제하시겠습니까?\n이 인물로 등록된 대사는 '나레이터'로 변경됩니다.`, () => {
+      showCustomConfirm(`"${targetName}" 인물을 삭제하시겠습니까?\n이 인물로 등록된 대사는 나레이션으로 변경됩니다.`, () => {
         state.characters.splice(idx, 1);
         state.dialogues.forEach(d => { if (d.char === targetName) d.char = '나레이터'; });
         commitHistory();
@@ -1762,8 +1762,8 @@
         state = {
           characters: [{ name: '나레이터', color: '회색' }],
           dialogues: [
-            { id: '1', char: '나레이터', text: '(희미한 전등 아래, 먼지 쌓인 원고지가 흩뿌려져 있다.)' },
-            { id: '2', char: '나레이터', text: '결국은 우리 모두 무대 위의 연기자일 뿐이오.' }
+            { id: '1', char: '나레이터', text: '안개 낀 바닷가, 새벽. 등대의 불빛이 규칙적으로 돌아간다. 파도 소리만이 무대를 채운다.' },
+            { id: '2', char: '나레이터', text: '여자가 계단을 올라 창밖을 바라본다. 수평선 너머, 흐릿한 형체가 서서히 등장한다.' }
           ],
           config: {
             width: 1080, height: 1080, fontFamily: "'Gowun Batang', serif", fontSize: 24, nameWidthRatio: 8, lineSpacing: 40,
