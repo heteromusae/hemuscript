@@ -1,0 +1,2034 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>헤무대본</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome for Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts & Custom Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@300;400;500;700&family=Nanum+Myeongjo:wght@400;700;800&family=Courier+Prime:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+  <!-- Pickr CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/themes/classic.min.css"/>
+  <!-- Cropper.js CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" />
+  
+  <style>
+    @font-face {
+        font-family: 'ChosunIlboMyungjo';
+        src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_one@1.0/Chosunilbo_myungjo.woff') format('woff');
+        font-weight: normal;
+        font-display: swap;
+    }
+    @font-face {
+        font-family: 'MaruBuri';
+        src: url(https://hangeul.pstatic.net/hangeul_static/webfont/MaruBuri/MaruBuri-Light.woff2) format('woff2');
+        font-weight: 300;
+        font-display: swap;
+    }
+    @font-face {
+        font-family: 'Paperozi';
+        src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-3Light.woff2') format('woff2');
+        font-weight: 300;
+        font-display: swap;
+    }
+
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background-color: #f4eae1;
+      color: #3e332a;
+    }
+    .retro-panel {
+      background-color: #fbf7f2;
+      border: 2px solid #d4c5b9;
+      box-shadow: 4px 4px 0px #d4c5b9;
+    }
+    .retro-btn {
+      background-color: #e8ded4;
+      border: 2px solid #8b7355;
+      color: #5c4a37;
+      transition: all 0.1s ease;
+    }
+    .retro-btn:active:not(:disabled) {
+      transform: translate(2px, 2px);
+      box-shadow: none !important;
+    }
+    .retro-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .retro-btn-accent {
+      background-color: #8b7355;
+      border: 2px solid #5c4a37;
+      color: #ffffff;
+    }
+    .retro-btn-danger {
+      background-color: #e5989b;
+      border: 2px solid #b56576;
+      color: #3c0919;
+    }
+    .retro-input {
+      background-color: #fdfcfb;
+      border: 2px solid #d4c5b9;
+      color: #5c4a37;
+    }
+    .retro-input:focus {
+      outline: none;
+      border-color: #8b7355;
+    }
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #f4eae1; }
+    ::-webkit-scrollbar-thumb { background: #d4c5b9; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #8b7355; }
+    
+    /* Pickr custom adjustments */
+    .pickr .pcr-button {
+      border: 1px solid #d4c5b9;
+      border-radius: 4px;
+      width: 2rem;
+      height: 2rem;
+    }
+
+    /* Accordion Toggle Icon transition */
+    .panel-open { transform: rotate(180deg); }
+
+    /* Cropper Container Limit */
+    .img-container {
+      max-height: 50vh;
+      width: 100%;
+      background-color: #e8ded4;
+    }
+    .img-container img {
+      display: block;
+      max-width: 100%;
+    }
+  </style>
+</head>
+<body class="p-4 md:p-8 min-h-screen flex flex-col justify-between">
+
+  <!-- Header -->
+  <header class="max-w-7xl mx-auto w-full mb-6">
+    <div class="retro-panel p-4 flex flex-col sm:flex-row justify-between items-center gap-4 rounded-lg">
+      <div class="flex items-center gap-3">
+        <i class="fa-solid fa-film text-3xl text-[#8b7355]"></i>
+        <div>
+          <h1 class="text-xl md:text-2xl font-bold tracking-tight font-serif text-[#5c4a37]">헤무대본</h1>
+        </div>
+      </div>
+      <div class="flex gap-2 flex-wrap justify-end">
+        <!-- Undo/Redo Buttons -->
+        <button onclick="undo()" id="btn-undo" class="retro-btn text-xs px-3 py-1.5 rounded font-semibold flex items-center gap-1" title="실행 취소">
+          <i class="fa-solid fa-rotate-left"></i>
+        </button>
+        <button onclick="redo()" id="btn-redo" class="retro-btn text-xs px-3 py-1.5 rounded font-semibold flex items-center gap-1 mr-2" title="다시 실행">
+          <i class="fa-solid fa-rotate-right"></i>
+        </button>
+
+        <button onclick="confirmReset()" class="retro-btn text-xs px-3 py-1.5 rounded font-semibold retro-btn-danger flex items-center gap-1">
+          <i class="fa-solid fa-arrow-rotate-left"></i> 스타일 초기화
+        </button>
+        <button onclick="confirmClearAll()" class="retro-btn text-xs px-3 py-1.5 rounded font-semibold bg-red-100 border-red-400 text-red-700 flex items-center gap-1">
+          <i class="fa-solid fa-trash-can"></i> 대사 전체삭제
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Grid Area -->
+  <main class="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow">
+    
+    <!-- Controls Sidebar (Left) -->
+    <section class="lg:col-span-5 flex flex-col gap-6">
+      
+      <!-- Character List Management -->
+      <div class="retro-panel p-5 rounded-lg flex flex-col gap-3">
+        <div class="flex justify-between items-center border-b border-[#e8ded4] pb-2">
+          <h2 class="font-bold text-base flex items-center gap-2"><i class="fa-solid fa-users text-[#8b7355]"></i> 인물 추가</h2>
+        </div>
+        
+        <div class="flex gap-2">
+          <select id="new-char-color" class="retro-input px-2 py-2 text-xs rounded w-24">
+            <option value="빨강">빨강</option>
+            <option value="주황">주황</option>
+            <option value="노랑">노랑</option>
+            <option value="초록">초록</option>
+            <option value="하늘">하늘</option>
+            <option value="파랑">파랑</option>
+            <option value="보라">보라</option>
+            <option value="분홍">분홍</option>
+            <option value="하양">하양</option>
+            <option value="회색" selected>회색</option>
+            <option value="검정">검정</option>
+          </select>
+          <input type="text" id="new-char-name" placeholder="인물 이름 입력" class="retro-input px-3 py-2 text-sm rounded w-full">
+          <button onclick="addCharacter()" class="retro-btn px-4 py-2 text-sm rounded font-semibold retro-btn-accent whitespace-nowrap">추가</button>
+        </div>
+
+        <div class="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-1" id="character-tags-container">
+          <!-- Dynamically filled -->
+        </div>
+      </div>
+
+      <!-- Add Dialog Input -->
+      <div class="retro-panel p-5 rounded-lg flex flex-col gap-3">
+        <div class="flex justify-between items-center border-b border-[#e8ded4] pb-2">
+          <h2 class="font-bold text-base flex items-center gap-2"><i class="fa-solid fa-comment-dots text-[#8b7355]"></i> 대사 입력</h2>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 mb-1">인물 선택</label>
+          <select id="char-select" class="retro-input px-3 py-2 text-sm rounded w-full">
+            <!-- Dynamic character options -->
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 mb-1">내용</label>
+          <textarea id="dialog-text" rows="3" placeholder="내용을 입력하세요." class="retro-input px-3 py-2 text-sm rounded w-full resize-none"></textarea>
+        </div>
+
+        <button onclick="addDialog()" class="retro-btn px-4 py-2 text-sm rounded font-bold retro-btn-accent flex items-center justify-center gap-2">
+          <i class="fa-solid fa-plus"></i> 대사 추가
+        </button>
+      </div>
+
+      <!-- Batch Dialog Input (Toggleable) -->
+      <div class="retro-panel p-5 rounded-lg flex flex-col gap-2">
+
+        <h2 class="font-bold text-base flex justify-between items-center w-full cursor-pointer select-none" onclick="toggleBatchPanel()">
+          <span class="flex items-center gap-2"><i class="fa-solid fa-layer-group text-[#8b7355]"></i> 일괄 입력</span>
+          <i id="batch-panel-icon" class="fa-solid fa-chevron-down text-gray-500 text-sm transition-transform"></i>
+        </h2>
+
+        <!-- Accordion Content -->
+        <div id="batch-panel-content" class="hidden flex-col gap-3 mt-1 pt-2 border-t border-[#e8ded4]">
+          <p class="text-[11px] text-gray-500 leading-relaxed">
+            줄바꿈을 기준으로 구분됩니다.<br>줄 앞에 아무 표시가 없으면 <b>나레이션</b>으로, <code class="bg-[#e8ded4] px-1 rounded">인물명:</code> 형식으로 시작하면 해당 인물의 대사로 처리됩니다. (등록되지 않은 인물일 시 자동 등록)<br>아래 등록된 <b>단축어</b>로 줄을 시작해도 해당 인물의 대사로 처리됩니다.
+          </p>
+
+          <!-- Shortcut Management -->
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">인물별 단축어 설정</label>
+            <div id="shortcut-list-container" class="flex flex-col gap-1.5 max-h-32 overflow-y-auto p-1.5 bg-[#fdfcfb] border border-[#d4c5b9] rounded">
+              <!-- Dynamically filled -->
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">내용</label>
+            <textarea id="batch-input-text" rows="6" placeholder="예)&#10;무언가의 나레이션…&#10;헤무: 안녕하세요&#10;🍀행복한 하루 보내시길 바라요" class="retro-input px-3 py-2 text-sm rounded w-full resize-none"></textarea>
+          </div>
+
+          <button onclick="processBatchInput()" class="retro-btn px-4 py-2 text-sm rounded font-bold retro-btn-accent flex items-center justify-center gap-2">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> 변환하여 추가
+          </button>
+        </div>
+      </div>
+
+      <!-- Text/Font Settings (Accordion) -->
+      <div class="retro-panel p-5 rounded-lg flex flex-col gap-2">
+        
+        <h2 class="font-bold text-base flex justify-between items-center w-full cursor-pointer border-b border-[#e8ded4] pb-2 select-none" onclick="toggleStylePanel()">
+          <span class="flex items-center gap-2"><i class="fa-solid fa-sliders text-[#8b7355]"></i> 스타일 설정</span>
+          <i id="style-panel-icon" class="fa-solid fa-chevron-down text-gray-500 text-sm transition-transform panel-open"></i>
+        </h2>
+        
+        <!-- Accordion Content -->
+        <div id="style-panel-content" class="flex flex-col gap-4 mt-2">
+          <!-- Canvas Dimensions & Ratio Presets -->
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1.5 flex justify-between items-center flex-wrap gap-y-1.5">
+              <span>캔버스 이미지 크기 & 비율</span>
+              <span class="flex items-center gap-3">
+                <label class="flex items-center gap-1 cursor-pointer" title="여백 자동 크롭과 함께 사용할 수 없어요">
+                  <input type="checkbox" id="center-mode-toggle" onchange="handleCenterModeToggle()" class="accent-[#8b7355]">
+                  <span class="text-[10px] font-bold text-[#8b7355]">중앙부터 입력</span>
+                </label>
+                <label class="flex items-center gap-1 cursor-pointer" title="중앙부터 입력과 함께 사용할 수 없어요">
+                  <input type="checkbox" id="auto-crop-toggle" onchange="handleAutoCropToggle()" class="accent-[#8b7355]">
+                  <span class="text-[10px] font-bold text-[#8b7355]">여백 자동 크롭</span>
+                </label>
+              </span>
+            </label>
+            <div class="grid grid-cols-4 gap-1.5 mb-2">
+              <button onclick="setPresetRatio(1080, 1080)" class="retro-btn text-[10px] py-1 rounded">1:1</button>
+              <button onclick="setPresetRatio(1080, 1440)" class="retro-btn text-[10px] py-1 rounded">3:4</button>
+              <button onclick="setPresetRatio(1080, 1920)" class="retro-btn text-[10px] py-1 rounded">9:16</button>
+              <button onclick="setPresetRatio(1200, 630)" class="retro-btn text-[10px] py-1 rounded">1.91:1</button>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <span class="text-[10px] text-gray-500">너비 (px)</span>
+                <input type="number" id="canvas-width" value="1080" step="10" oninput="updateConfigState(); renderCanvas();" onchange="commitHistory();" class="retro-input px-2 py-1 text-xs rounded w-full">
+              </div>
+              <div>
+                <span class="text-[10px] text-gray-500">높이 (px)</span>
+                <input type="number" id="canvas-height" value="1080" step="10" oninput="updateConfigState(); renderCanvas();" onchange="commitHistory();" class="retro-input px-2 py-1 text-xs rounded w-full">
+              </div>
+            </div>
+          </div>
+
+          <!-- Fonts & Text Styles -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1">서체 설정</label>
+              <select id="font-family" onchange="updateConfigState(); commitHistory(); renderCanvas();" class="retro-input px-2 py-1.5 text-xs rounded w-full">
+                <option value="'Gowun Batang', serif">고운 바탕체</option>
+                <option value="'Nanum Myeongjo', serif">나눔 명조체</option>
+                <option value="'Courier Prime', monospace">쿠리어 옛타자기</option>
+                <option value="'Noto Sans KR', sans-serif">고딕 본문체</option>
+                <option value="'ChosunIlboMyungjo', serif">조선일보 명조</option>
+                <option value="'MaruBuri', serif">마루 부리</option>
+                <option value="'Paperozi', sans-serif">페이퍼로지</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1 flex justify-between"><span>서체 크기</span> <span id="font-size-val">24px</span></label>
+              <input type="range" id="font-size" min="14" max="42" value="24" oninput="document.getElementById('font-size-val').innerText = this.value + 'px'; updateConfigState(); renderCanvas();" onchange="commitHistory();" class="w-full accent-[#8b7355] mt-1">
+            </div>
+          </div>
+
+          <!-- Wrap Mode & Text Alignment -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1">줄바꿈 단위</label>
+              <select id="wrap-mode" onchange="updateConfigState(); commitHistory(); renderCanvas();" class="retro-input px-2 py-1.5 text-xs rounded w-full">
+                <option value="char">글자 단위</option>
+                <option value="word">단어 단위</option>
+              </select>
+            </div>
+            <div></div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1">나레이터 정렬</label>
+              <select id="narrator-align" onchange="updateConfigState(); commitHistory(); renderCanvas();" class="retro-input px-2 py-1.5 text-xs rounded w-full">
+                <option value="left">왼쪽 정렬</option>
+                <option value="center">가운데 정렬</option>
+                <option value="right">오른쪽 정렬</option>
+                <option value="justify">양끝 정렬</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1">대사 정렬</label>
+              <select id="character-align" onchange="updateConfigState(); commitHistory(); renderCanvas();" class="retro-input px-2 py-1.5 text-xs rounded w-full">
+                <option value="left">왼쪽 정렬</option>
+                <option value="center">가운데 정렬</option>
+                <option value="right">오른쪽 정렬</option>
+                <option value="justify">양끝 정렬</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Alignment / Spacers -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1 flex justify-between"><span>인물명-대사 사이 여백</span> <span id="name-width-val">8%</span></label>
+              <input type="range" id="name-width-ratio" min="4" max="20" value="8" oninput="document.getElementById('name-width-val').innerText = this.value + '%'; updateConfigState(); renderCanvas();" onchange="commitHistory();" class="w-full accent-[#8b7355] mt-1">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1 flex justify-between"><span>대사 간 간격</span> <span id="line-spacing-val">40px</span></label>
+              <input type="range" id="line-spacing" min="10" max="80" value="40" oninput="document.getElementById('line-spacing-val').innerText = this.value + 'px'; updateConfigState(); renderCanvas();" onchange="commitHistory();" class="w-full accent-[#8b7355] mt-1">
+            </div>
+          </div>
+
+          <!-- Pickr Colors & Preset Templates -->
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">디자인 컬러 프리셋</label>
+            <div class="grid grid-cols-3 gap-1.5 mb-3">
+              <button onclick="applyColorTemplate('#f5f2eb', '#2c221e')" class="retro-btn text-[10px] py-1 rounded">빈티지 극본 (Light)</button>
+              <button onclick="applyColorTemplate('#2b2622', '#e9dfd3')" class="retro-btn text-[10px] py-1 rounded">빈티지 극본 (Dark)</button>
+              <button onclick="applyColorTemplate('#eae2d5', '#5a463c')" class="retro-btn text-[10px] py-1 rounded">빈티지 극본</button>
+              <button onclick="applyColorTemplate('#1a202c', '#e2e8f0')" class="retro-btn text-[10px] py-1 rounded">밤하늘</button>
+              <button onclick="applyColorTemplate('#e0e0e0', '#333333')" class="retro-btn text-[10px] py-1 rounded">신문</button>
+              <button onclick="applyColorTemplate('#ffffff', '#111111')" class="retro-btn text-[10px] py-1 rounded">모노</button>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-3 bg-[#fdfcfb] p-3 rounded border border-[#d4c5b9]">
+              <div>
+                <label class="block text-[10px] text-gray-500 mb-1">배경색</label>
+                <div class="flex items-center gap-2">
+                  <div id="bg-pickr"></div>
+                  <input type="text" id="bg-color-text" value="#f5f2eb" placeholder="#Hex" oninput="syncColorInput('bg', this.value)" class="retro-input w-20 text-xs px-1 py-1 rounded text-center uppercase">
+                </div>
+              </div>
+              <div>
+                <label class="block text-[10px] text-gray-500 mb-1">글씨색</label>
+                <div class="flex items-center gap-2">
+                  <div id="fg-pickr"></div>
+                  <input type="text" id="fg-color-text" value="#2c221e" placeholder="#Hex" oninput="syncColorInput('fg', this.value)" class="retro-input w-20 text-xs px-1 py-1 rounded text-center uppercase">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Paper Texture Options -->
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-2">종이 질감</label>
+            <div class="grid grid-cols-4 gap-1.5 text-center">
+              <label class="cursor-pointer border-2 rounded p-1.5 flex flex-col items-center gap-1 bg-white hover:bg-gray-50" id="tex-lbl-none">
+                <input type="radio" name="paper-texture" value="none" checked onchange="updateConfigState(); commitHistory(); renderCanvas();" class="sr-only">
+                <span class="text-xs">없음</span>
+              </label>
+              <label class="cursor-pointer border-2 rounded p-1.5 flex flex-col items-center gap-1 bg-white hover:bg-gray-50" id="tex-lbl-pulp">
+                <input type="radio" name="paper-texture" value="pulp" onchange="updateConfigState(); commitHistory(); renderCanvas();" class="sr-only">
+                <span class="text-xs">펄프</span>
+              </label>
+              <label class="cursor-pointer border-2 rounded p-1.5 flex flex-col items-center gap-1 bg-white hover:bg-gray-50" id="tex-lbl-grid">
+                <input type="radio" name="paper-texture" value="grid" onchange="updateConfigState(); commitHistory(); renderCanvas();" class="sr-only">
+                <span class="text-xs">격자</span>
+              </label>
+              <label class="cursor-pointer border-2 rounded p-1.5 flex flex-col items-center gap-1 bg-white hover:bg-gray-50" id="tex-lbl-noise">
+                <input type="radio" name="paper-texture" value="noise" onchange="updateConfigState(); commitHistory(); renderCanvas();" class="sr-only">
+                <span class="text-xs">노이즈</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Custom Background Image Options -->
+          <div class="border-t border-[#e8ded4] pt-3">
+            <label class="block text-xs font-bold text-gray-600 mb-1">사용자 배경 이미지 추가</label>
+            <div class="flex flex-col gap-2">
+              <div class="flex gap-2 items-center">
+                <input type="file" id="bg-image-upload" accept="image/*" onchange="handleImageUpload(event)" class="retro-input px-2 py-1 text-[11px] rounded w-full">
+                <button onclick="clearBgImage()" class="retro-btn px-2 py-1 text-[11px] rounded text-red-600 whitespace-nowrap hidden" id="btn-clear-bg">제거</button>
+              </div>
+              <div>
+                <label class="block text-[10px] text-gray-500 mb-1 flex justify-between"><span>불투명도</span> <span id="bg-opacity-val">50%</span></label>
+                <input type="range" id="bg-opacity" min="0" max="100" value="50" oninput="document.getElementById('bg-opacity-val').innerText = this.value + '%'; updateConfigState(); renderCanvas();" onchange="commitHistory();" class="w-full accent-[#8b7355]">
+              </div>
+            </div>
+          </div>
+
+          <!-- Page Text Options -->
+          <div class="border-t border-[#e8ded4] pt-3">
+            <div class="flex justify-between items-center mb-2">
+              <label class="text-xs font-bold text-gray-600">상단/하단 문구 삽입</label>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="page-footer-toggle" onchange="updateConfigState(); commitHistory(); renderCanvas();" class="sr-only peer" checked>
+                <div class="w-9 h-5 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#8b7355]"></div>
+              </label>
+            </div>
+
+            <div id="footer-details-area" class="flex flex-col gap-2">
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <span class="text-[10px] text-gray-500">문구 위치</span>
+                  <select id="footer-position" onchange="updateConfigState(); commitHistory(); renderCanvas();" class="retro-input px-2 py-1 text-xs rounded w-full">
+                    <option value="bottom-left">좌측 하단</option>
+                    <option value="bottom-center">중앙 하단</option>
+                    <option value="bottom-right" selected>우측 하단</option>
+                    <option value="top-left">좌측 상단</option>
+                    <option value="top-center">중앙 상단</option>
+                    <option value="top-right">우측 상단</option>
+                  </select>
+                </div>
+                <div>
+                  <span class="text-[10px] text-gray-500">작성 모드</span>
+                  <select id="footer-mode" onchange="toggleFooterMode(); updateConfigState(); commitHistory(); renderCanvas();" class="retro-input px-2 py-1 text-xs rounded w-full">
+                    <option value="unified">모든 장 일괄 문구</option>
+                    <option value="split">페이지별 직접 문구</option>
+                  </select>
+                </div>
+              </div>
+
+              <div id="footer-unified-input-wrapper">
+                <span class="text-[10px] text-gray-500">공통 문구 입력</span>
+                <input type="text" id="footer-unified-text" value="— 헤무대본 제 1장 —" oninput="updateConfigState(); renderCanvas(true);" onchange="commitHistory();" class="retro-input px-2 py-1 text-xs rounded w-full">
+              </div>
+
+              <div id="footer-split-input-wrapper" class="hidden flex-col gap-2 p-2 bg-[#fdfcfb] border border-[#d4c5b9] rounded max-h-40 overflow-y-auto">
+                <p class="text-[10px] text-gray-400 text-center">페이지가 렌더링되면 장별 입력란이 생성됩니다.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Custom User Templates -->
+          <div class="border-t border-[#e8ded4] pt-3 mt-1">
+            <div class="flex justify-between items-center mb-2">
+              <div>
+                <label class="text-xs font-bold text-gray-600 block">내 템플릿 관리</label>
+                <span class="text-[10px] text-gray-500">인물 목록 및 대본 스타일 저장</span>
+              </div>
+              <button onclick="openTemplateModal()" class="retro-btn text-xs font-bold px-3 py-1.5 rounded retro-btn-accent shadow-sm">
+                <i class="fa-solid fa-floppy-disk mr-1"></i> 현재 상태 저장
+              </button>
+            </div>
+            <div id="user-templates-container" class="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto bg-[#fdfcfb] p-2 border border-[#d4c5b9] rounded">
+              <!-- Dynamically populated templates -->
+            </div>
+          </div>
+
+        </div> <!-- End of Accordion Content -->
+      </div>
+    </section>
+
+    <!-- Work Bench & Canvas Panel (Right) -->
+    <section class="lg:col-span-7 flex flex-col gap-6">
+      
+      <!-- Dialogue List & Re-ordering/Editing -->
+      <div class="retro-panel p-5 rounded-lg flex flex-col gap-3">
+        <div class="flex justify-between items-center border-b border-[#e8ded4] pb-2">
+          <h2 class="font-bold text-base flex items-center gap-2">
+            <i class="fa-solid fa-list-check text-[#8b7355]"></i> 내용 수정 및 순서 변경
+          </h2>
+          <span class="text-xs text-gray-500">드래그하여 순서 변경</span>
+        </div>
+
+        <div class="max-h-64 overflow-y-auto border border-[#e8ded4] rounded p-2 bg-[#fdfcfb] flex flex-col gap-2" id="dialogue-list">
+          <!-- Dynamically filled with dialogue blocks -->
+        </div>
+      </div>
+
+      <!-- Realtime Multi-page Canvas Preview Area -->
+      <div class="retro-panel p-5 rounded-lg flex flex-col gap-4">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-[#e8ded4] pb-2">
+          <div>
+            <h2 class="font-bold text-base flex items-center gap-2">
+              <i class="fa-solid fa-file-image text-[#8b7355]"></i> 최종 이미지
+            </h2>
+            <p class="text-[11px] text-gray-500">높이를 벗어난 문장은 자동으로 다음 장으로 넘어갑니다.</p>
+          </div>
+          
+          <div class="flex items-center gap-2 self-stretch sm:self-auto">
+            <button onclick="renderCanvas();" class="retro-btn text-xs px-2.5 py-1.5 rounded bg-amber-50">
+              <i class="fa-solid fa-arrows-rotate"></i> 새로고침
+            </button>
+            <button onclick="downloadAllPages()" class="retro-btn text-xs px-4 py-1.5 rounded font-bold retro-btn-accent flex-grow sm:flex-grow-0 flex items-center justify-center gap-1 shadow-sm">
+              <i class="fa-solid fa-download"></i> 전체 저장
+            </button>
+          </div>
+        </div>
+
+        <!-- Canvas Container -->
+        <div class="flex flex-col items-center gap-4 bg-[#e8ded4] p-4 rounded border-2 border-[#d4c5b9] max-h-[700px] overflow-y-auto" id="canvas-preview-container">
+          <!-- Rendered canvas elements will go here -->
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- Background Image Crop Modal -->
+  <div id="crop-modal" class="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center hidden p-4">
+    <div class="retro-panel p-4 rounded-lg w-full max-w-2xl flex flex-col gap-4">
+      <h3 class="font-bold text-lg text-[#5c4a37] border-b border-[#e8ded4] pb-2 flex items-center gap-2">
+        <i class="fa-solid fa-crop-simple"></i> 배경 이미지 편집
+      </h3>
+      <p class="text-xs text-gray-500">선택한 이미지를 현재 캔버스 비율에 맞게 잘라냅니다.</p>
+      
+      <div class="img-container rounded overflow-hidden relative">
+        <img id="crop-image" src="" alt="Picture">
+      </div>
+      
+      <div class="flex justify-end gap-2 mt-2">
+        <button onclick="closeCropModal()" class="retro-btn px-4 py-2 text-sm rounded">취소</button>
+        <button onclick="applyCrop()" class="retro-btn px-6 py-2 text-sm rounded font-bold retro-btn-accent">적용하기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Dialog Modal -->
+  <div id="edit-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
+    <div class="retro-panel p-6 rounded-lg w-full max-w-lg flex flex-col gap-4">
+      <h3 class="font-bold text-lg text-[#5c4a37] border-b border-[#e8ded4] pb-2 flex items-center gap-2">
+        <i class="fa-solid fa-pen-to-square"></i> 대사 내용 수정
+      </h3>
+      <div>
+        <label class="block text-xs font-semibold text-gray-600 mb-1">화자 선택</label>
+        <select id="modal-char-select" class="retro-input px-3 py-2 text-sm rounded w-full"></select>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-gray-600 mb-1">대사 내용</label>
+        <textarea id="modal-dialog-text" rows="4" class="retro-input px-3 py-2 text-sm rounded w-full resize-none"></textarea>
+      </div>
+      <div class="flex justify-end gap-2">
+        <button onclick="closeEditModal()" class="retro-btn px-4 py-2 text-sm rounded">취소</button>
+        <button onclick="saveEditModal()" class="retro-btn px-4 py-2 text-sm rounded font-bold retro-btn-accent">저장하기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Template Save/Edit Modal -->
+  <div id="template-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
+    <div class="retro-panel p-6 rounded-lg w-full max-w-sm flex flex-col gap-4 text-center">
+      <h3 class="font-bold text-lg text-[#5c4a37]" id="template-modal-title">템플릿 저장</h3>
+      <p class="text-xs text-gray-500 text-left">현재 설정(인물 목록, 대본 스타일)을 저장할 템플릿 이름을 입력하세요.</p>
+      <input type="text" id="template-name-input" class="retro-input px-3 py-2 text-sm rounded w-full" placeholder="내 템플릿 이름">
+      <input type="hidden" id="template-edit-id">
+      <div class="flex justify-end gap-2 mt-2">
+        <button onclick="closeTemplateModal()" class="retro-btn px-4 py-2 text-sm rounded">취소</button>
+        <button onclick="confirmSaveTemplate()" class="retro-btn px-6 py-2 text-sm rounded font-bold retro-btn-accent">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Alert/Confirm Popup -->
+  <div id="custom-alert" class="fixed inset-0 bg-black/50 z-[70] flex items-center justify-center hidden p-4">
+    <div class="retro-panel p-6 rounded-lg w-full max-w-md flex flex-col gap-4 text-center">
+      <div class="text-[#8b7355] text-4xl" id="alert-icon">
+        <i class="fa-solid fa-circle-question"></i>
+      </div>
+      <h3 class="font-bold text-lg text-[#5c4a37]" id="alert-title">안내</h3>
+      <p class="text-sm text-gray-600 leading-relaxed whitespace-pre-line" id="alert-message"></p>
+      <div class="flex justify-center gap-2 mt-2">
+        <button id="alert-cancel-btn" onclick="closeAlert()" class="retro-btn px-4 py-2 text-sm rounded hidden">취소</button>
+        <button id="alert-confirm-btn" class="retro-btn px-6 py-2 text-sm rounded font-bold retro-btn-accent">확인</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Pickr Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/pickr.min.js"></script>
+  <!-- Cropper.js Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+
+  <script>
+    // --- COLOR MAP FOR CHARACTER TAGS ---
+    const colorMap = {
+      '빨강': { bg: '#fee2e2', text: '#ef4444', border: '#fca5a5' },
+      '주황': { bg: '#ffedd5', text: '#f97316', border: '#fdba74' },
+      '노랑': { bg: '#fef9c3', text: '#eab308', border: '#fde047' },
+      '초록': { bg: '#dcfce7', text: '#22c55e', border: '#86efac' },
+      '하늘': { bg: '#e0f2fe', text: '#0ea5e9', border: '#7dd3fc' },
+      '파랑': { bg: '#dbeafe', text: '#3b82f6', border: '#93c5fd' },
+      '보라': { bg: '#f3e8ff', text: '#a855f7', border: '#d8b4fe' },
+      '분홍': { bg: '#fce7f3', text: '#ec4899', border: '#f9a8d4' },
+      '하양': { bg: '#ffffff', text: '#374151', border: '#d1d5db' },
+      '회색': { bg: '#f3f4f6', text: '#6b7280', border: '#d1d5db' },
+      '검정': { bg: '#1f2937', text: '#ffffff', border: '#4b5563' }
+    };
+
+    // --- STATE, HISTORY & INITIALIZATION ---
+    let state = {
+      characters: [{ name: '나레이터', color: '회색', shortcut: '' }],
+      dialogues: [
+        { id: '1', char: '나레이터', text: '안개 낀 바닷가, 새벽. 등대의 불빛이 규칙적으로 돌아간다. 파도 소리만이 무대를 채운다.' },
+        { id: '2', char: '나레이터', text: '여자가 계단을 올라 창밖을 바라본다. 수평선 너머, 흐릿한 형체가 서서히 등장한다.' }
+      ],
+      config: {
+        width: 1080,
+        height: 1080,
+        fontFamily: "'Gowun Batang', serif",
+        fontSize: 24,
+        nameWidthRatio: 8,
+        lineSpacing: 40,
+        bgColor: '#f5f2eb',
+        fgColor: '#2c221e',
+        paperTexture: 'pulp',
+        pageFooterEnabled: false,
+        footerPosition: 'bottom-left',
+        footerMode: 'unified',
+        footerUnifiedText: '— 헤무대본 제 1장 —',
+        pageTexts: [],
+        autoCrop: false,
+        centerMode: false,
+        bgImage: null,
+        bgOpacity: 50,
+        wrapMode: 'char',
+        narratorAlign: 'left',
+        characterAlign: 'left'
+      },
+      templates: [] 
+    };
+
+    let historyStack = [];
+    let historyIndex = -1;
+
+    let activeEditId = null;
+    let bgPickr = null;
+    let fgPickr = null;
+    let prevPageCount = 0;
+    
+    let cropperInstance = null;
+
+    function initHistory() {
+      historyStack = [JSON.stringify(state)];
+      historyIndex = 0;
+      updateUndoRedoUI();
+    }
+
+    function commitHistory() {
+      const currentStateStr = JSON.stringify(state);
+      if (historyStack[historyIndex] === currentStateStr) return; 
+      
+      historyStack = historyStack.slice(0, historyIndex + 1);
+      historyStack.push(currentStateStr);
+      
+      if (historyStack.length > 30) {
+        historyStack.shift();
+      } else {
+        historyIndex++;
+      }
+      
+      updateUndoRedoUI();
+      saveLocalState();
+    }
+
+    function undo() {
+      if (historyIndex > 0) {
+        historyIndex--;
+        state = JSON.parse(historyStack[historyIndex]);
+        syncConfigToUI();
+        renderCharacterTags();
+        renderDialogueList();
+        renderUserTemplates();
+        renderCanvas(true);
+        saveLocalState();
+        updateUndoRedoUI();
+      }
+    }
+
+    function redo() {
+      if (historyIndex < historyStack.length - 1) {
+        historyIndex++;
+        state = JSON.parse(historyStack[historyIndex]);
+        syncConfigToUI();
+        renderCharacterTags();
+        renderDialogueList();
+        renderUserTemplates();
+        renderCanvas(true);
+        saveLocalState();
+        updateUndoRedoUI();
+      }
+    }
+
+    function updateUndoRedoUI() {
+      const undoBtn = document.getElementById('btn-undo');
+      const redoBtn = document.getElementById('btn-redo');
+      undoBtn.disabled = historyIndex <= 0;
+      redoBtn.disabled = historyIndex >= historyStack.length - 1;
+    }
+
+    function loadSavedState() {
+      const saved = localStorage.getItem('PLAY_SCRIPT_MAKER_STATE_v6');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed.characters && parsed.dialogues && parsed.config) {
+            state = parsed;
+            if(!state.config.pageTexts) state.config.pageTexts = [];
+            if(!state.templates) state.templates = [];
+            if(state.config.autoCrop === undefined) state.config.autoCrop = false;
+            if(state.config.centerMode === undefined) state.config.centerMode = false;
+            if(state.config.bgOpacity === undefined) state.config.bgOpacity = 50;
+            if(state.config.wrapMode === undefined) state.config.wrapMode = 'char';
+            if(state.config.narratorAlign === undefined) state.config.narratorAlign = 'left';
+            if(state.config.characterAlign === undefined) state.config.characterAlign = 'left';
+            if(state.characters) state.characters.forEach(c => { if (c.shortcut === undefined) c.shortcut = ''; });
+            if(state.templates) state.templates.forEach(t => { if (t.characters) t.characters.forEach(c => { if (c.shortcut === undefined) c.shortcut = ''; }); });
+          }
+        } catch (e) {
+          console.error('로컬스토리지 데이터를 가져오는 중에 오류가 발생했습니다:', e);
+        }
+      }
+    }
+
+    function saveLocalState() {
+      localStorage.setItem('PLAY_SCRIPT_MAKER_STATE_v6', JSON.stringify(state));
+    }
+
+    window.onload = function() {
+      loadSavedState();
+      initHistory(); 
+      initPickr();
+      syncConfigToUI();
+      renderCharacterTags();
+      renderDialogueList();
+      renderUserTemplates();
+      
+      document.fonts.ready.then(() => {
+        renderCanvas();
+      });
+    };
+
+    // --- ACCORDION UI ---
+    function toggleStylePanel() {
+      const content = document.getElementById('style-panel-content');
+      const icon = document.getElementById('style-panel-icon');
+      
+      if (content.classList.contains('hidden')) {
+        content.classList.remove('hidden');
+        content.classList.add('flex');
+        icon.classList.add('panel-open');
+      } else {
+        content.classList.add('hidden');
+        content.classList.remove('flex');
+        icon.classList.remove('panel-open');
+      }
+    }
+
+    function toggleBatchPanel() {
+      const content = document.getElementById('batch-panel-content');
+      const icon = document.getElementById('batch-panel-icon');
+
+      if (content.classList.contains('hidden')) {
+        content.classList.remove('hidden');
+        content.classList.add('flex');
+        icon.classList.add('panel-open');
+      } else {
+        content.classList.add('hidden');
+        content.classList.remove('flex');
+        icon.classList.remove('panel-open');
+      }
+    }
+
+    // --- PICKR COLOR PICKER INIT ---
+    function initPickr() {
+      const pickrOptions = {
+        theme: 'classic',
+        swatches: ['#f5f2eb', '#2c221e', '#1a202c', '#e2e8f0', '#ffffff', '#111111'],
+        components: {
+          preview: true,
+          opacity: false,
+          hue: true,
+          interaction: { hex: true, input: true, save: true }
+        }
+      };
+
+      bgPickr = Pickr.create({ el: '#bg-pickr', default: state.config.bgColor, ...pickrOptions });
+      fgPickr = Pickr.create({ el: '#fg-pickr', default: state.config.fgColor, ...pickrOptions });
+
+      bgPickr.on('change', (color) => {
+        const hex = color.toHEXA().toString();
+        document.getElementById('bg-color-text').value = hex;
+        state.config.bgColor = hex;
+        updateConfigState(true);
+        renderCanvas();
+      }).on('changestop', () => commitHistory());
+
+      fgPickr.on('change', (color) => {
+        const hex = color.toHEXA().toString();
+        document.getElementById('fg-color-text').value = hex;
+        state.config.fgColor = hex;
+        updateConfigState(true);
+        renderCanvas();
+      }).on('changestop', () => commitHistory());
+    }
+
+    function syncColorInput(type, hexVal) {
+      if (/^#([0-9A-F]{3}){1,2}$/i.test(hexVal)) {
+        if (type === 'bg') { bgPickr.setColor(hexVal); state.config.bgColor = hexVal; } 
+        else { fgPickr.setColor(hexVal); state.config.fgColor = hexVal; }
+        updateConfigState(true);
+        commitHistory();
+        renderCanvas();
+      }
+    }
+
+    function applyColorTemplate(bg, fg) {
+      bgPickr.setColor(bg);
+      fgPickr.setColor(fg);
+      document.getElementById('bg-color-text').value = bg;
+      document.getElementById('fg-color-text').value = fg;
+      state.config.bgColor = bg;
+      state.config.fgColor = fg;
+      updateConfigState(true);
+      commitHistory();
+      renderCanvas();
+    }
+
+    // --- UI SYNC & CONFIG MANAGEMENT ---
+    function syncConfigToUI() {
+      const conf = state.config;
+      document.getElementById('canvas-width').value = conf.width;
+      document.getElementById('canvas-height').value = conf.height;
+      document.getElementById('font-family').value = conf.fontFamily;
+      document.getElementById('font-size').value = conf.fontSize;
+      document.getElementById('font-size-val').innerText = conf.fontSize + 'px';
+      document.getElementById('name-width-ratio').value = conf.nameWidthRatio;
+      document.getElementById('name-width-val').innerText = conf.nameWidthRatio + '%';
+      document.getElementById('line-spacing').value = conf.lineSpacing;
+      document.getElementById('line-spacing-val').innerText = conf.lineSpacing + 'px';
+      
+      if(bgPickr) bgPickr.setColor(conf.bgColor);
+      if(fgPickr) fgPickr.setColor(conf.fgColor);
+      document.getElementById('bg-color-text').value = conf.bgColor;
+      document.getElementById('fg-color-text').value = conf.fgColor;
+
+      const radio = document.querySelector(`input[name="paper-texture"][value="${conf.paperTexture}"]`);
+      if (radio) radio.checked = true;
+      updateTextureLabels();
+
+      document.getElementById('page-footer-toggle').checked = conf.pageFooterEnabled;
+      document.getElementById('footer-position').value = conf.footerPosition;
+      document.getElementById('footer-mode').value = conf.footerMode;
+      document.getElementById('footer-unified-text').value = conf.footerUnifiedText;
+      
+      document.getElementById('auto-crop-toggle').checked = conf.autoCrop;
+      document.getElementById('center-mode-toggle').checked = conf.centerMode;
+      document.getElementById('bg-opacity').value = conf.bgOpacity;
+      document.getElementById('bg-opacity-val').innerText = conf.bgOpacity + '%';
+
+      document.getElementById('wrap-mode').value = conf.wrapMode;
+      document.getElementById('narrator-align').value = conf.narratorAlign;
+      document.getElementById('character-align').value = conf.characterAlign;
+
+      if (conf.bgImage) {
+        document.getElementById('btn-clear-bg').classList.remove('hidden');
+      } else {
+        document.getElementById('btn-clear-bg').classList.add('hidden');
+      }
+
+      toggleFooterMode();
+    }
+
+    function updateConfigState(skipValues = false) {
+      const conf = state.config;
+      if (!skipValues) {
+        conf.width = parseInt(document.getElementById('canvas-width').value) || 1080;
+        conf.height = parseInt(document.getElementById('canvas-height').value) || 1080;
+        conf.fontFamily = document.getElementById('font-family').value;
+        conf.fontSize = parseInt(document.getElementById('font-size').value) || 24;
+        conf.nameWidthRatio = parseInt(document.getElementById('name-width-ratio').value) || 8;
+        conf.lineSpacing = parseInt(document.getElementById('line-spacing').value) || 40;
+        
+        const selectedTex = document.querySelector('input[name="paper-texture"]:checked');
+        conf.paperTexture = selectedTex ? selectedTex.value : 'none';
+        
+        conf.pageFooterEnabled = document.getElementById('page-footer-toggle').checked;
+        conf.footerPosition = document.getElementById('footer-position').value;
+        conf.footerMode = document.getElementById('footer-mode').value;
+        conf.footerUnifiedText = document.getElementById('footer-unified-text').value;
+
+        conf.autoCrop = document.getElementById('auto-crop-toggle').checked;
+        conf.centerMode = document.getElementById('center-mode-toggle').checked;
+        conf.bgOpacity = parseInt(document.getElementById('bg-opacity').value) || 50;
+
+        conf.wrapMode = document.getElementById('wrap-mode').value;
+        conf.narratorAlign = document.getElementById('narrator-align').value;
+        conf.characterAlign = document.getElementById('character-align').value;
+      }
+      updateTextureLabels();
+      saveLocalState(); 
+    }
+
+    function updateTextureLabels() {
+      const selected = document.querySelector('input[name="paper-texture"]:checked').value;
+      const ids = ['none', 'pulp', 'grid', 'noise'];
+      ids.forEach(id => {
+        const lbl = document.getElementById('tex-lbl-' + id);
+        if (lbl) {
+            if (id === selected) {
+              lbl.classList.add('border-[#8b7355]', 'bg-[#f4eae1]');
+              lbl.classList.remove('border-transparent');
+            } else {
+              lbl.classList.remove('border-[#8b7355]', 'bg-[#f4eae1]');
+            }
+        }
+      });
+    }
+
+    function toggleFooterMode() {
+      const mode = document.getElementById('footer-mode').value;
+      if (mode === 'unified') {
+        document.getElementById('footer-unified-input-wrapper').classList.remove('hidden');
+        document.getElementById('footer-split-input-wrapper').classList.add('hidden');
+        document.getElementById('footer-split-input-wrapper').classList.remove('flex');
+      } else {
+        document.getElementById('footer-unified-input-wrapper').classList.add('hidden');
+        document.getElementById('footer-split-input-wrapper').classList.remove('hidden');
+        document.getElementById('footer-split-input-wrapper').classList.add('flex');
+      }
+    }
+
+    function handleAutoCropToggle() {
+      if (document.getElementById('auto-crop-toggle').checked) {
+        document.getElementById('center-mode-toggle').checked = false;
+      }
+      updateConfigState();
+      commitHistory();
+      renderCanvas();
+    }
+
+    function handleCenterModeToggle() {
+      if (document.getElementById('center-mode-toggle').checked) {
+        document.getElementById('auto-crop-toggle').checked = false;
+      }
+      updateConfigState();
+      commitHistory();
+      renderCanvas();
+    }
+
+    function setPresetRatio(w, h) {
+      document.getElementById('canvas-width').value = w;
+      document.getElementById('canvas-height').value = h;
+      updateConfigState();
+      commitHistory();
+      renderCanvas();
+    }
+
+    // --- BACKGROUND IMAGE UPLOAD & CROP ---
+    function handleImageUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const imageElement = document.getElementById('crop-image');
+        imageElement.src = event.target.result;
+        document.getElementById('crop-modal').classList.remove('hidden');
+        
+        if (cropperInstance) {
+          cropperInstance.destroy();
+        }
+        
+        const currentRatio = state.config.width / state.config.height;
+        cropperInstance = new Cropper(imageElement, {
+          aspectRatio: currentRatio,
+          viewMode: 1,
+          autoCropArea: 1,
+          background: false,
+        });
+      };
+      reader.readAsDataURL(file);
+      e.target.value = ''; 
+    }
+
+    function closeCropModal() {
+      document.getElementById('crop-modal').classList.add('hidden');
+      if (cropperInstance) {
+        cropperInstance.destroy();
+        cropperInstance = null;
+      }
+    }
+
+    function applyCrop() {
+      if (!cropperInstance) return;
+      
+      const canvas = cropperInstance.getCroppedCanvas({
+        width: state.config.width, 
+        height: state.config.height
+      });
+      
+      if (canvas) {
+        state.config.bgImage = canvas.toDataURL('image/jpeg', 0.9);
+        document.getElementById('btn-clear-bg').classList.remove('hidden');
+        updateConfigState();
+        commitHistory();
+        renderCanvas();
+      }
+      closeCropModal();
+    }
+
+    function clearBgImage() {
+      state.config.bgImage = null;
+      document.getElementById('btn-clear-bg').classList.add('hidden');
+      updateConfigState();
+      commitHistory();
+      renderCanvas();
+    }
+
+    // --- USER TEMPLATES WITH CUSTOM MODAL ---
+    function renderUserTemplates() {
+      const container = document.getElementById('user-templates-container');
+      container.innerHTML = '';
+      
+      if (!state.templates || state.templates.length === 0) {
+        container.innerHTML = '<div class="text-center py-4 text-xs text-gray-400">저장된 템플릿이 없습니다.</div>';
+        return;
+      }
+
+      state.templates.forEach(t => {
+        const item = document.createElement('div');
+        item.className = 'flex justify-between items-center bg-white p-2 border border-[#e8ded4] rounded shadow-sm';
+        
+        const titleSpan = document.createElement('span');
+        titleSpan.className = 'text-xs font-semibold text-[#5c4a37] truncate flex-grow';
+        titleSpan.innerText = t.name;
+        
+        const btnGroup = document.createElement('div');
+        btnGroup.className = 'flex gap-1 ml-2 shrink-0';
+        
+        const loadBtn = document.createElement('button');
+        loadBtn.className = 'retro-btn px-2 py-1 text-[10px] rounded hover:bg-amber-50';
+        loadBtn.innerText = '불러오기';
+        loadBtn.onclick = () => loadUserTemplate(t.id);
+
+        const editBtn = document.createElement('button');
+        editBtn.className = 'retro-btn px-2 py-1 text-[10px] rounded hover:bg-amber-50';
+        editBtn.innerText = '수정';
+        editBtn.onclick = () => openTemplateModal(t.id);
+        
+        const delBtn = document.createElement('button');
+        delBtn.className = 'retro-btn px-2 py-1 text-[10px] rounded text-red-600 hover:bg-red-50';
+        delBtn.innerText = '삭제';
+        delBtn.onclick = () => deleteUserTemplate(t.id);
+
+        btnGroup.appendChild(loadBtn);
+        btnGroup.appendChild(editBtn);
+        btnGroup.appendChild(delBtn);
+        
+        item.appendChild(titleSpan);
+        item.appendChild(btnGroup);
+        container.appendChild(item);
+      });
+    }
+
+    function openTemplateModal(editId = null) {
+      const modal = document.getElementById('template-modal');
+      const input = document.getElementById('template-name-input');
+      const idInput = document.getElementById('template-edit-id');
+      const title = document.getElementById('template-modal-title');
+
+      if (editId) {
+        const t = state.templates.find(x => x.id === editId);
+        if (t) {
+          input.value = t.name;
+          idInput.value = editId;
+          title.innerText = '템플릿 수정 (현재 설정으로 덮어쓰기)';
+        }
+      } else {
+        input.value = '';
+        idInput.value = '';
+        title.innerText = '새 템플릿 저장';
+      }
+      modal.classList.remove('hidden');
+      input.focus();
+    }
+
+    function closeTemplateModal() {
+      document.getElementById('template-modal').classList.add('hidden');
+    }
+
+    function confirmSaveTemplate() {
+      const input = document.getElementById('template-name-input');
+      const idInput = document.getElementById('template-edit-id');
+      const name = input.value.trim();
+
+      if (!name) return showCustomAlert('템플릿 이름을 입력해 주세요.');
+
+      const editId = idInput.value;
+      if (editId) {
+        const t = state.templates.find(x => x.id === editId);
+        if (t) {
+          t.name = name;
+          t.characters = JSON.parse(JSON.stringify(state.characters));
+          t.config = { ...state.config };
+        }
+      } else {
+        const newTemplate = {
+          id: Date.now().toString(),
+          name: name,
+          characters: JSON.parse(JSON.stringify(state.characters)),
+          config: { ...state.config }
+        };
+        state.templates.push(newTemplate);
+      }
+
+      commitHistory();
+      renderUserTemplates();
+      closeTemplateModal();
+    }
+
+    function loadUserTemplate(id) {
+      const t = state.templates.find(x => x.id === id);
+      if (!t) return;
+      
+      showCustomConfirm(`"${t.name}" 템플릿을 불러오시겠습니까?\n현재 설정된 인물 목록과 스타일이 덮어씌워집니다.`, () => {
+        state.characters = JSON.parse(JSON.stringify(t.characters));
+        const currentPageTexts = state.config.pageTexts;
+        state.config = JSON.parse(JSON.stringify(t.config));
+        state.config.pageTexts = currentPageTexts; 
+        
+        commitHistory();
+        syncConfigToUI();
+        renderCharacterTags();
+        renderDialogueList(); 
+        renderCanvas();
+      });
+    }
+
+    function deleteUserTemplate(id) {
+      showCustomConfirm("선택한 템플릿을 삭제하시겠습니까?", () => {
+        state.templates = state.templates.filter(x => x.id !== id);
+        commitHistory();
+        renderUserTemplates();
+      });
+    }
+
+    // --- CHARACTER MANAGEMENT ---
+    function renderCharacterTags() {
+      const container = document.getElementById('character-tags-container');
+      container.innerHTML = '';
+      state.characters.forEach((charObj, idx) => {
+        const tag = document.createElement('div');
+        tag.className = 'flex items-center gap-1.5 border text-xs px-2.5 py-1 rounded-full font-semibold';
+        const colorInfo = colorMap[charObj.color] || colorMap['회색'];
+        tag.style.backgroundColor = colorInfo.bg;
+        tag.style.color = colorInfo.text;
+        tag.style.borderColor = colorInfo.border;
+        
+        const nameSpan = document.createElement('span');
+        nameSpan.innerText = charObj.name;
+        
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'opacity-70 hover:opacity-100 font-bold ml-1 transition-opacity';
+        deleteBtn.innerHTML = '×';
+        deleteBtn.onclick = function() { removeCharacter(idx); };
+
+        tag.appendChild(nameSpan);
+        if (charObj.name !== '나레이터') tag.appendChild(deleteBtn);
+        container.appendChild(tag);
+      });
+
+      const select = document.getElementById('char-select');
+      select.innerHTML = '';
+      state.characters.forEach(charObj => {
+        const opt = document.createElement('option');
+        opt.value = charObj.name;
+        opt.innerText = charObj.name;
+        select.appendChild(opt);
+      });
+
+      renderShortcutList();
+    }
+
+    // --- SHORTCUT MANAGEMENT (for 일괄 입력) ---
+    function renderShortcutList() {
+      const container = document.getElementById('shortcut-list-container');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const shortcutable = state.characters.filter(c => c.name !== '나레이터');
+
+      if (shortcutable.length === 0) {
+        container.innerHTML = '<div class="text-center py-2 text-[11px] text-gray-400">등록된 인물이 없습니다.</div>';
+        return;
+      }
+
+      shortcutable.forEach((charObj) => {
+        const row = document.createElement('div');
+        row.className = 'flex items-center gap-2';
+
+        const colorInfo = colorMap[charObj.color] || colorMap['회색'];
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'text-xs font-semibold px-2 py-1 rounded-full border whitespace-nowrap shrink-0';
+        nameSpan.style.backgroundColor = colorInfo.bg;
+        nameSpan.style.color = colorInfo.text;
+        nameSpan.style.borderColor = colorInfo.border;
+        nameSpan.innerText = charObj.name;
+
+        const shortcutInput = document.createElement('input');
+        shortcutInput.type = 'text';
+        shortcutInput.value = charObj.shortcut || '';
+        shortcutInput.placeholder = '단축어 (이모티콘 추천)';
+        shortcutInput.className = 'retro-input px-2 py-1 text-xs rounded w-full';
+        shortcutInput.oninput = function() {
+          charObj.shortcut = this.value;
+          saveLocalState();
+        };
+        shortcutInput.onchange = function() {
+          charObj.shortcut = this.value.trim();
+          this.value = charObj.shortcut;
+          commitHistory();
+        };
+
+        row.appendChild(nameSpan);
+        row.appendChild(shortcutInput);
+        container.appendChild(row);
+      });
+    }
+
+    function addCharacter() {
+      const input = document.getElementById('new-char-name');
+      const colorSelect = document.getElementById('new-char-color');
+      const name = input.value.trim();
+      const color = colorSelect.value;
+      
+      if (!name) return showCustomAlert('인물명을 입력해 주세요.');
+      if (state.characters.find(c => c.name === name)) return showCustomAlert('이미 존재하는 인물명입니다.');
+      
+      state.characters.push({ name: name, color: color, shortcut: '' });
+      input.value = '';
+      commitHistory();
+      renderCharacterTags();
+    }
+
+    function removeCharacter(idx) {
+      const targetName = state.characters[idx].name;
+      showCustomConfirm(`"${targetName}" 인물을 삭제하시겠습니까?\n이 인물로 등록된 대사는 나레이션으로 변경됩니다.`, () => {
+        state.characters.splice(idx, 1);
+        state.dialogues.forEach(d => { if (d.char === targetName) d.char = '나레이터'; });
+        commitHistory();
+        renderCharacterTags();
+        renderDialogueList();
+        renderCanvas();
+      });
+    }
+
+    // --- DIALOGUE MANAGEMENT ---
+    function renderDialogueList() {
+      const container = document.getElementById('dialogue-list');
+      container.innerHTML = '';
+      if (state.dialogues.length === 0) {
+        container.innerHTML = '<div class="text-center py-6 text-gray-400 text-sm">내용이 없습니다. 내용을 추가해 주세요.</div>';
+        return;
+      }
+      state.dialogues.forEach((d, idx) => {
+        const item = document.createElement('div');
+        item.className = 'flex items-start justify-between gap-3 p-3 bg-white border border-[#e8ded4] rounded shadow-sm hover:border-[#8b7355] transition-all relative group';
+        item.setAttribute('draggable', 'true');
+        item.setAttribute('data-id', d.id);
+        
+        item.ondragstart = handleDragStart;
+        item.ondragover = handleDragOver;
+        item.ondrop = handleDrop;
+        item.ondragend = handleDragEnd;
+
+        const textWrapper = document.createElement('div');
+        textWrapper.className = 'flex-grow pr-12 cursor-grab active:cursor-grabbing';
+        
+        const badge = document.createElement('span');
+        badge.className = 'inline-block text-[10px] font-bold px-2 py-0.5 rounded-full mr-2 border';
+        
+        const charObj = state.characters.find(c => c.name === d.char) || { color: '회색' };
+        const colorInfo = colorMap[charObj.color] || colorMap['회색'];
+        badge.style.backgroundColor = colorInfo.bg;
+        badge.style.color = colorInfo.text;
+        badge.style.borderColor = colorInfo.border;
+        badge.innerText = d.char;
+
+        const content = document.createElement('p');
+        content.className = 'text-xs md:text-sm text-[#3e332a] mt-1 font-serif leading-relaxed whitespace-pre-wrap';
+        content.innerText = d.text;
+
+        textWrapper.appendChild(badge);
+        textWrapper.appendChild(content);
+
+        const btnArea = document.createElement('div');
+        btnArea.className = 'absolute right-2 top-2 flex gap-1';
+
+        const upBtn = document.createElement('button');
+        upBtn.className = 'p-1 hover:bg-gray-100 rounded text-gray-500 text-xs transition-colors';
+        upBtn.innerHTML = '<i class="fa-solid fa-chevron-up"></i>';
+        upBtn.onclick = () => moveDialogue(idx, -1);
+
+        const downBtn = document.createElement('button');
+        downBtn.className = 'p-1 hover:bg-gray-100 rounded text-gray-500 text-xs transition-colors';
+        downBtn.innerHTML = '<i class="fa-solid fa-chevron-down"></i>';
+        downBtn.onclick = () => moveDialogue(idx, 1);
+
+        const editBtn = document.createElement('button');
+        editBtn.className = 'p-1 hover:bg-amber-50 rounded text-amber-700 text-xs transition-colors';
+        editBtn.innerHTML = '<i class="fa-solid fa-pen"></i>';
+        editBtn.onclick = () => openEditModal(d.id);
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'p-1 hover:bg-red-50 rounded text-red-600 text-xs transition-colors';
+        delBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
+        delBtn.onclick = () => deleteDialogue(d.id);
+
+        btnArea.appendChild(upBtn);
+        btnArea.appendChild(downBtn);
+        btnArea.appendChild(editBtn);
+        btnArea.appendChild(delBtn);
+
+        item.appendChild(textWrapper);
+        item.appendChild(btnArea);
+        container.appendChild(item);
+      });
+    }
+
+    function addDialog() {
+      const charSelect = document.getElementById('char-select');
+      const dialogText = document.getElementById('dialog-text');
+      const char = charSelect.value || '나레이터';
+      const text = dialogText.value.trim();
+      if (!text) return showCustomAlert('내용을 입력해 주세요.');
+
+      state.dialogues.push({ id: Date.now().toString(), char: char, text: text });
+      dialogText.value = '';
+      
+      commitHistory();
+      renderDialogueList();
+      renderCanvas();
+    }
+
+    // --- BATCH DIALOG INPUT ---
+    const AUTO_COLOR_ORDER = ['파랑', '빨강', '초록', '보라', '주황', '분홍', '하늘', '노랑', '검정', '하양'];
+    function pickAutoColor() {
+      const nonNarratorCount = state.characters.filter(c => c.name !== '나레이터').length;
+      return AUTO_COLOR_ORDER[nonNarratorCount % AUTO_COLOR_ORDER.length];
+    }
+
+    function processBatchInput() {
+      const textarea = document.getElementById('batch-input-text');
+      const raw = textarea.value;
+      if (!raw || !raw.trim()) return showCustomAlert('일괄 입력할 내용을 작성해 주세요.');
+
+      const lines = raw.split('\n');
+      const newDialogues = [];
+      const newCharactersCreated = [];
+
+      lines.forEach(rawLine => {
+        const line = rawLine.trim();
+        if (!line) return; // skip blank lines
+
+        let matchedChar = null;
+        let text = null;
+
+        // 1) Check registered shortcuts first (longest shortcut wins if more than one matches)
+        const shortcutCandidates = state.characters
+          .filter(c => c.shortcut && c.shortcut.trim() !== '' && line.startsWith(c.shortcut))
+          .sort((a, b) => b.shortcut.length - a.shortcut.length);
+
+        if (shortcutCandidates.length > 0) {
+          const target = shortcutCandidates[0];
+          matchedChar = target.name;
+          text = line.slice(target.shortcut.length).trim();
+        } else {
+          // 2) Check '인물명:' pattern - everything before the first ':' is the name
+          const colonIdx = line.indexOf(':');
+          if (colonIdx > 0) {
+            const namePart = line.slice(0, colonIdx).trim();
+            const textPart = line.slice(colonIdx + 1).trim();
+            if (namePart) {
+              matchedChar = namePart;
+              text = textPart;
+            }
+          }
+        }
+
+        if (matchedChar) {
+          let charObj = state.characters.find(c => c.name === matchedChar);
+          if (!charObj) {
+            charObj = { name: matchedChar, color: pickAutoColor(), shortcut: '' };
+            state.characters.push(charObj);
+            newCharactersCreated.push(matchedChar);
+          }
+          if (!text) text = line; // safety fallback, shouldn't normally trigger
+          newDialogues.push({ id: Date.now().toString() + '_' + Math.random().toString(36).slice(2, 7), char: matchedChar, text: text });
+        } else {
+          // No marker found -> narration
+          newDialogues.push({ id: Date.now().toString() + '_' + Math.random().toString(36).slice(2, 7), char: '나레이터', text: line });
+        }
+      });
+
+      if (newDialogues.length === 0) return showCustomAlert('변환할 수 있는 내용을 찾지 못했습니다.');
+
+      state.dialogues = state.dialogues.concat(newDialogues);
+      textarea.value = '';
+
+      commitHistory();
+      renderCharacterTags();
+      renderDialogueList();
+      renderCanvas();
+
+      let msg = `${newDialogues.length}개의 대사가 추가되었습니다.`;
+      if (newCharactersCreated.length > 0) {
+        msg += `\n새로 생성된 인물: ${newCharactersCreated.join(', ')}`;
+      }
+      showCustomAlert(msg);
+    }
+
+    function deleteDialogue(id) {
+      state.dialogues = state.dialogues.filter(d => d.id !== id);
+      commitHistory();
+      renderDialogueList();
+      renderCanvas();
+    }
+
+    function moveDialogue(index, direction) {
+      const targetIndex = index + direction;
+      if (targetIndex < 0 || targetIndex >= state.dialogues.length) return;
+      const temp = state.dialogues[index];
+      state.dialogues[index] = state.dialogues[targetIndex];
+      state.dialogues[targetIndex] = temp;
+      commitHistory();
+      renderDialogueList();
+      renderCanvas();
+    }
+
+    // Drag & Drop
+    let dragSrcElement = null;
+    function handleDragStart(e) {
+      dragSrcElement = this;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', this.getAttribute('data-id'));
+      this.classList.add('opacity-40');
+    }
+    function handleDragOver(e) { e.preventDefault(); return false; }
+    function handleDrop(e) {
+      e.stopPropagation(); e.preventDefault();
+      if (dragSrcElement !== this) {
+        const srcId = e.dataTransfer.getData('text/plain');
+        const targetId = this.getAttribute('data-id');
+        const srcIdx = state.dialogues.findIndex(d => d.id === srcId);
+        const targetIdx = state.dialogues.findIndex(d => d.id === targetId);
+        if (srcIdx !== -1 && targetIdx !== -1) {
+          const [removed] = state.dialogues.splice(srcIdx, 1);
+          state.dialogues.splice(targetIdx, 0, removed);
+          commitHistory();
+          renderDialogueList();
+          renderCanvas();
+        }
+      }
+      return false;
+    }
+    function handleDragEnd() { this.classList.remove('opacity-40'); }
+
+    // Edit Modal
+    function openEditModal(id) {
+      activeEditId = id;
+      const d = state.dialogues.find(item => item.id === id);
+      if (!d) return;
+      const modalCharSelect = document.getElementById('modal-char-select');
+      modalCharSelect.innerHTML = '';
+      state.characters.forEach(charObj => {
+        const opt = document.createElement('option');
+        opt.value = charObj.name;
+        opt.innerText = charObj.name;
+        if (charObj.name === d.char) opt.selected = true;
+        modalCharSelect.appendChild(opt);
+      });
+      document.getElementById('modal-dialog-text').value = d.text;
+      document.getElementById('edit-modal').classList.remove('hidden');
+    }
+    function closeEditModal() { document.getElementById('edit-modal').classList.add('hidden'); activeEditId = null; }
+    function saveEditModal() {
+      if (!activeEditId) return;
+      const d = state.dialogues.find(item => item.id === activeEditId);
+      if (d) {
+        d.char = document.getElementById('modal-char-select').value;
+        d.text = document.getElementById('modal-dialog-text').value.trim();
+        commitHistory();
+        renderDialogueList();
+        renderCanvas();
+      }
+      closeEditModal();
+    }
+
+    // Custom Page Texts
+    function syncPageTextInputs(pageCount) {
+      const conf = state.config;
+      while (conf.pageTexts.length < pageCount) conf.pageTexts.push("");
+      if (conf.pageTexts.length > pageCount) conf.pageTexts.length = pageCount;
+      
+      const wrapper = document.getElementById('footer-split-input-wrapper');
+      wrapper.innerHTML = '';
+      
+      if(pageCount === 0) {
+        wrapper.innerHTML = '<p class="text-[10px] text-gray-400 text-center py-2">표시할 페이지가 없습니다.</p>';
+        return;
+      }
+      for (let i = 0; i < pageCount; i++) {
+        const div = document.createElement('div');
+        div.className = "flex items-center gap-2";
+        div.innerHTML = `
+          <span class="text-[10px] text-[#8b7355] font-bold whitespace-nowrap min-w-[30px] text-right">${i + 1}장 :</span>
+          <input type="text" class="retro-input px-2 py-1 text-[11px] rounded w-full" 
+                 placeholder="${i+1}장 문구 입력" value="${conf.pageTexts[i] || ''}" 
+                 oninput="updatePageText(${i}, this.value)" onchange="commitHistory()">`;
+        wrapper.appendChild(div);
+      }
+    }
+
+    function updatePageText(index, value) {
+      state.config.pageTexts[index] = value;
+      saveLocalState();
+      renderCanvas(true);
+    }
+
+    // --- CANVAS RENDERER & ASYNC IMAGE LOADER ---
+    let pageCanvasList = [];
+
+    function loadImage(src) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => resolve(img);
+        img.onerror = () => resolve(null);
+        img.src = src;
+      });
+    }
+
+    // Sums item heights + inter-item spacing for a page's dialogue block (used by 중앙부터 입력 mode)
+    function computeDialogueBlockHeight(pageData, lineSpacing) {
+      let h = 0;
+      pageData.forEach((item, idx) => {
+        if (idx > 0) h += lineSpacing;
+        h += item.calculatedHeight;
+      });
+      return h;
+    }
+
+    async function renderCanvas(skipInputSync = false) {
+      const container = document.getElementById('canvas-preview-container');
+      const conf = state.config;
+      const dList = state.dialogues;
+
+      if (dList.length === 0) {
+        container.innerHTML = '<div class="text-center py-10 text-gray-600 bg-white/50 w-full rounded border-dashed border-2 border-gray-300">표시할 내용이 없습니다. 내용을 입력해 주세요.</div>';
+        pageCanvasList = [];
+        if(!skipInputSync && prevPageCount !== 0) {
+           syncPageTextInputs(0);
+           prevPageCount = 0;
+        }
+        return;
+      }
+
+      // Load Background Image if exists
+      let loadedBgImage = null;
+      if (conf.bgImage) {
+        loadedBgImage = await loadImage(conf.bgImage);
+      }
+
+      const cWidth = conf.width;
+      const cHeight = conf.height;
+      const padT = 100; const padB = 100; const padL = 80; const padR = 80;
+
+      const printableWidth = cWidth - padL - padR;
+      const printableHeight = cHeight - padT - padB;
+      const leftColWidth = printableWidth * (conf.nameWidthRatio / 100);
+      const rightColWidth = printableWidth * ((100 - conf.nameWidthRatio) / 100) - 20; 
+      const rightColStart = padL + leftColWidth + 20;
+
+      const measurementCanvas = document.createElement('canvas');
+      const mctx = measurementCanvas.getContext('2d');
+      mctx.font = `${conf.fontSize}px ${conf.fontFamily}`;
+
+      let pages = [];
+      let currentPageLines = [];
+      let currentHeight = 0;
+
+      for (let i = 0; i < dList.length; i++) {
+        const d = dList[i];
+        const isNarrative = d.char === '나레이터'; 
+        
+        let characterNameLines = [];
+        if (!isNarrative) {
+          characterNameLines = wrapText(mctx, d.char, leftColWidth, conf.fontSize, conf.fontFamily, conf.wrapMode);
+        }
+
+        const wrapWidth = isNarrative ? printableWidth : rightColWidth;
+        const dialogueBodyLines = wrapText(mctx, d.text, wrapWidth, conf.fontSize, conf.fontFamily, conf.wrapMode);
+
+        const nameBlockHeight = isNarrative ? 0 : characterNameLines.length * (conf.fontSize * 1.5);
+        const textBlockHeight = dialogueBodyLines.length * (conf.fontSize * 1.5);
+        const itemHeight = Math.max(nameBlockHeight, textBlockHeight);
+
+        const neededSpacing = currentPageLines.length > 0 ? conf.lineSpacing : 0;
+        
+        if (currentHeight + neededSpacing + itemHeight > printableHeight) {
+          if (currentPageLines.length > 0) {
+            pages.push(currentPageLines);
+            currentPageLines = [];
+            currentHeight = 0;
+          }
+          if (itemHeight > printableHeight) {
+            let tempBodyLines = [...dialogueBodyLines];
+            while (tempBodyLines.length > 0) {
+              const maxLinesOnFreshPage = Math.floor(printableHeight / (conf.fontSize * 1.5));
+              const sliceCount = Math.max(1, maxLinesOnFreshPage);
+              const slice = tempBodyLines.splice(0, sliceCount);
+              pages.push([{
+                char: d.char, isNarrative: isNarrative,
+                nameLines: currentPageLines.length === 0 ? characterNameLines : [],
+                bodyLines: slice, calculatedHeight: slice.length * (conf.fontSize * 1.5)
+              }]);
+            }
+            continue; 
+          }
+        }
+        currentHeight += neededSpacing + itemHeight;
+        currentPageLines.push({
+          char: d.char, isNarrative: isNarrative,
+          nameLines: characterNameLines, bodyLines: dialogueBodyLines, calculatedHeight: itemHeight
+        });
+      }
+
+      if (currentPageLines.length > 0) pages.push(currentPageLines);
+
+      const pageCount = pages.length;
+      if (!skipInputSync && pageCount !== prevPageCount) {
+        syncPageTextInputs(pageCount);
+        prevPageCount = pageCount;
+      } else if (!skipInputSync && pageCount === prevPageCount) {
+        syncPageTextInputs(pageCount);
+      }
+
+      container.innerHTML = '';
+      pageCanvasList = [];
+
+      pages.forEach((pageData, pageIdx) => {
+        // Auto Crop Logic Calculation - FIXED
+        let targetHeight = cHeight;
+        if (conf.autoCrop && !conf.centerMode && pageIdx === pages.length - 1) {
+          let yPos = padT;
+          pageData.forEach((item, itemIdx) => {
+            if (itemIdx > 0) yPos += conf.lineSpacing;
+            yPos += item.calculatedHeight;
+          });
+          
+          if (conf.pageFooterEnabled && conf.footerPosition.includes('bottom')) {
+             const footerFontSize = Math.max(12, conf.fontSize * 0.55) + 2;
+             yPos += 25 + footerFontSize; // Add only required space for footer
+          }
+          
+          targetHeight = Math.min(cHeight, yPos + padB);
+        }
+
+        // 중앙부터 입력 (Center Mode) Layout Calculation
+        // The dialogue block (and footer, if it hugs the content) is treated as one unit
+        // and centered vertically within the fixed canvas height.
+        const footerGap = 24;
+        const footerFontSizeCalc = Math.max(12, conf.fontSize * 0.55) + 1;
+        const footerIsTop = conf.pageFooterEnabled && conf.footerPosition.startsWith('top');
+        const footerIsBottom = conf.pageFooterEnabled && conf.footerPosition.startsWith('bottom');
+        let centerDialogueStartY = padT;
+        let centerFooterY = 0;
+        if (conf.centerMode) {
+          const dialogueBlockHeight = computeDialogueBlockHeight(pageData, conf.lineSpacing);
+          const footerBlockHeight = conf.pageFooterEnabled ? (footerFontSizeCalc + footerGap) : 0;
+          const totalBlockHeight = dialogueBlockHeight + footerBlockHeight;
+          const blockTop = (targetHeight - totalBlockHeight) / 2;
+
+          if (footerIsTop) {
+            centerFooterY = blockTop;
+            centerDialogueStartY = blockTop + footerFontSizeCalc + footerGap;
+          } else if (footerIsBottom) {
+            centerDialogueStartY = blockTop;
+            centerFooterY = blockTop + dialogueBlockHeight + footerGap;
+          } else {
+            centerDialogueStartY = blockTop;
+          }
+        }
+
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width = cWidth;
+        pageCanvas.height = targetHeight;
+        pageCanvas.style.maxWidth = '100%';
+        pageCanvas.style.height = 'auto';
+        pageCanvas.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1)';
+        pageCanvas.style.borderRadius = '6px';
+        pageCanvas.className = 'border-2 border-[#8b7355]/30 mb-2 bg-white';
+
+        const ctx = pageCanvas.getContext('2d');
+        
+        // Base Background Color
+        ctx.fillStyle = conf.bgColor;
+        ctx.fillRect(0, 0, cWidth, targetHeight);
+
+        // Draw Cropped Image Background if loaded
+        if (loadedBgImage && conf.bgOpacity > 0) {
+          ctx.save();
+          ctx.globalAlpha = conf.bgOpacity / 100;
+          
+          const iW = loadedBgImage.width;
+          const iH = loadedBgImage.height;
+          
+          // Width matches canvas
+          const drawW = cWidth;
+          // Height calculated proportional to original image
+          const drawH = iH * (cWidth / iW);
+          const x = 0;
+          // Y is calculated to center the image vertically based on dynamic targetHeight
+          const y = (targetHeight - drawH) / 2;
+          
+          ctx.drawImage(loadedBgImage, x, y, drawW, drawH);
+          ctx.restore();
+        }
+
+        // Overlay Texture
+        drawPaperTexture(ctx, cWidth, targetHeight, conf.paperTexture);
+
+        // Drawing Text
+        ctx.fillStyle = conf.fgColor;
+        ctx.textBaseline = 'top';
+
+        // Render Page Footer
+        if (conf.pageFooterEnabled) {
+          ctx.save();
+          const footerFontSize = Math.max(12, conf.fontSize * 0.55) + 1;
+          ctx.font = `${footerFontSize}px ${conf.fontFamily}`;
+          ctx.fillStyle = adjustColorOpacity(conf.fgColor, 0.7);
+          
+          let footerStr = "";
+          if (conf.footerMode === 'unified') {
+            footerStr = conf.footerUnifiedText;
+          } else {
+            footerStr = conf.pageTexts[pageIdx] || "";
+          }
+
+          let fx = padL + 10;
+          // Footer Y pos responds to the new targetHeight dynamically (or hugs the content block in center mode)
+          let fyBottom = conf.centerMode ? centerFooterY : (targetHeight - (padB / 2) - 25);
+          let fyTop = conf.centerMode ? centerFooterY : ((padT / 2) + 25);
+          
+          let fy = fyBottom; 
+          ctx.textAlign = 'left';
+
+          switch (conf.footerPosition) {
+            case 'bottom-left':   fx = padL + 7; fy = fyBottom; break;
+            case 'bottom-center': fx = cWidth / 2; fy = fyBottom; ctx.textAlign = 'center'; break;
+            case 'bottom-right':  fx = cWidth - padR - 7; fy = fyBottom; ctx.textAlign = 'right'; break;
+            case 'top-left':      fx = padL + 7; fy = fyTop; break;
+            case 'top-center':    fx = cWidth / 2; fy = fyTop; ctx.textAlign = 'center'; break;
+            case 'top-right':     fx = cWidth - padR - 7; fy = fyTop; ctx.textAlign = 'right'; break;
+          }
+
+          if(footerStr) ctx.fillText(footerStr, fx, fy);
+          ctx.restore();
+        }
+
+        // Draw Dialogue Elements
+        let yPos = conf.centerMode ? centerDialogueStartY : padT;
+        pageData.forEach((item, itemIdx) => {
+          if (itemIdx > 0) yPos += conf.lineSpacing;
+          
+          ctx.save();
+          ctx.font = `${conf.fontSize}px ${conf.fontFamily}`;
+          ctx.fillStyle = conf.fgColor;
+          const fontHeight = conf.fontSize * 1.5;
+
+          if (item.isNarrative) {
+            ctx.fillStyle = adjustColorOpacity(conf.fgColor, 0.85);
+            drawAlignedLines(ctx, item.bodyLines, padL, printableWidth, yPos, fontHeight, conf.narratorAlign, conf.wrapMode);
+          } else {
+            ctx.save();
+            ctx.font = `bold ${conf.fontSize}px ${conf.fontFamily}`;
+            drawAlignedLines(ctx, item.nameLines, padL, leftColWidth, yPos, fontHeight, conf.characterAlign, conf.wrapMode);
+            ctx.restore();
+            const bodyRegionX = rightColStart;
+            const bodyRegionWidth = (padL + printableWidth) - rightColStart;
+            drawAlignedLines(ctx, item.bodyLines, bodyRegionX, bodyRegionWidth, yPos, fontHeight, conf.characterAlign, conf.wrapMode);
+          }
+          ctx.restore();
+          yPos += item.calculatedHeight;
+        });
+
+        const wrapDiv = document.createElement('div');
+        wrapDiv.className = 'w-full flex flex-col items-center';
+        const pageLabel = document.createElement('span');
+        pageLabel.className = 'text-xs text-[#5c4a37] font-semibold mb-1 bg-[#dfd4c9] px-3 py-0.5 rounded-full';
+        pageLabel.innerText = `[페이지 ${pageIdx + 1} / 전체 ${pages.length}장]`;
+
+        wrapDiv.appendChild(pageLabel);
+        wrapDiv.appendChild(pageCanvas);
+        container.appendChild(wrapDiv);
+
+        pageCanvasList.push({ canvas: pageCanvas, idx: pageIdx + 1 });
+      });
+    }
+
+    // Draws multiple lines of text left/center/right/justify aligned within a given horizontal band [x, x+width]
+    function drawAlignedLines(ctx, lines, x, width, y, lineHeight, align, wrapMode) {
+      ctx.save();
+      if (align === 'justify') {
+        lines.forEach((line, idx) => {
+          const lineY = y + idx * lineHeight;
+          const isLastLine = idx === lines.length - 1;
+          // Last line of a block is left-aligned (standard justify behavior), not stretched
+          if (isLastLine || line.length <= 1) {
+            ctx.textAlign = 'left';
+            ctx.fillText(line, x, lineY);
+          } else {
+            drawJustifiedLine(ctx, line, x, width, lineY, wrapMode);
+          }
+        });
+      } else {
+        let anchorX = x;
+        if (align === 'center') {
+          ctx.textAlign = 'center';
+          anchorX = x + width / 2;
+        } else if (align === 'right') {
+          ctx.textAlign = 'right';
+          anchorX = x + width;
+        } else {
+          ctx.textAlign = 'left';
+          anchorX = x;
+        }
+        lines.forEach((line, idx) => {
+          ctx.fillText(line, anchorX, y + idx * lineHeight);
+        });
+      }
+      ctx.restore();
+    }
+
+    // Stretches a single line to fill the full width by distributing extra space
+    // between words (word wrap mode) or between individual characters (char wrap mode)
+    function drawJustifiedLine(ctx, line, x, width, y, wrapMode) {
+      ctx.textAlign = 'left';
+      if (wrapMode === 'word' && line.indexOf(' ') !== -1) {
+        const words = line.split(' ');
+        const wordWidths = words.map(w => ctx.measureText(w).width);
+        const totalWordWidth = wordWidths.reduce((a, b) => a + b, 0);
+        const gap = (width - totalWordWidth) / (words.length - 1);
+        let curX = x;
+        words.forEach((w, i) => {
+          ctx.fillText(w, curX, y);
+          curX += wordWidths[i] + gap;
+        });
+      } else {
+        const chars = line.split('');
+        if (chars.length <= 1) { ctx.fillText(line, x, y); return; }
+        const charWidths = chars.map(c => ctx.measureText(c).width);
+        const totalCharWidth = charWidths.reduce((a, b) => a + b, 0);
+        const gap = (width - totalCharWidth) / (chars.length - 1);
+        let curX = x;
+        chars.forEach((c, i) => {
+          ctx.fillText(c, curX, y);
+          curX += charWidths[i] + gap;
+        });
+      }
+    }
+
+    function wrapText(ctx, text, maxWidth, fontSize, fontFamily, wrapMode) {
+      ctx.font = `${fontSize}px ${fontFamily}`;
+      const paragraphs = text.split('\n');
+      let allLines = [];
+      paragraphs.forEach(p => {
+        const lines = (wrapMode === 'word') ? wrapParagraphByWord(ctx, p, maxWidth) : wrapParagraphByChar(ctx, p, maxWidth);
+        allLines = allLines.concat(lines);
+      });
+      return allLines;
+    }
+
+    // Character-by-character wrapping (default/original behavior) - breaks anywhere a line exceeds maxWidth
+    function wrapParagraphByChar(ctx, p, maxWidth) {
+      const chars = p.split('');
+      let lines = [];
+      let currentLine = "";
+      for (let i = 0; i < chars.length; i++) {
+        const char = chars[i];
+        const testLine = currentLine + char;
+        const metrics = ctx.measureText(testLine);
+        if (metrics.width > maxWidth && currentLine.length > 0) {
+          lines.push(currentLine);
+          currentLine = char;
+        } else {
+          currentLine = testLine;
+        }
+      }
+      if (currentLine) lines.push(currentLine);
+      return lines;
+    }
+
+    // Word-by-word wrapping - keeps words (space-separated) together, only breaking a word if it alone exceeds maxWidth
+    function wrapParagraphByWord(ctx, p, maxWidth) {
+      if (p === "") return [];
+      const words = p.split(' ');
+      let lines = [];
+      let currentLine = "";
+      for (let i = 0; i < words.length; i++) {
+        const word = words[i];
+        const testLine = currentLine ? currentLine + ' ' + word : word;
+        const metrics = ctx.measureText(testLine);
+        if (metrics.width > maxWidth && currentLine.length > 0) {
+          lines.push(currentLine);
+          if (ctx.measureText(word).width > maxWidth) {
+            const brokenLines = wrapParagraphByChar(ctx, word, maxWidth);
+            for (let j = 0; j < brokenLines.length - 1; j++) lines.push(brokenLines[j]);
+            currentLine = brokenLines.length > 0 ? brokenLines[brokenLines.length - 1] : "";
+          } else {
+            currentLine = word;
+          }
+        } else {
+          currentLine = testLine;
+        }
+      }
+      if (currentLine) lines.push(currentLine);
+      return lines;
+    }
+
+    function drawPaperTexture(ctx, w, h, textureType) {
+      if (textureType === 'none') return;
+      ctx.save();
+      if (textureType === 'pulp') {
+        ctx.fillStyle = 'rgba(139, 115, 85, 0.03)';
+        for (let i = 0; i < (w*h/1458); i++) ctx.fillRect(Math.random()*w, Math.random()*h, Math.random()*2+1, Math.random()*2+1);
+        ctx.strokeStyle = 'rgba(139, 115, 85, 0.04)'; ctx.lineWidth = 0.5;
+        for (let i = 0; i < (w*h/7776); i++) { ctx.beginPath(); const rx = Math.random()*w; const ry = Math.random()*h; ctx.moveTo(rx, ry); ctx.lineTo(rx + (Math.random()*20-10), ry + (Math.random()*20-10)); ctx.stroke(); }
+      } else if (textureType === 'grid') {
+        ctx.strokeStyle = 'rgba(139, 115, 85, 0.05)'; ctx.lineWidth = 1; const spacing = 40;
+        for (let x = 0; x < w; x += spacing) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+        for (let y = 0; y < h; y += spacing) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+      } else if (textureType === 'noise') {
+        const imgData = ctx.getImageData(0, 0, w, h); const data = imgData.data;
+        for (let i = 0; i < data.length; i += 4) {
+          const noise = (Math.random() - 0.5) * 6;
+          data[i] = Math.min(255, Math.max(0, data[i] + noise)); data[i+1] = Math.min(255, Math.max(0, data[i+1] + noise)); data[i+2] = Math.min(255, Math.max(0, data[i+2] + noise));
+        }
+        ctx.putImageData(imgData, 0, 0);
+      }
+      ctx.restore();
+    }
+
+    function adjustColorOpacity(hex, opacity) {
+      hex = hex.replace('#', '');
+      if (hex.length === 3) hex = hex.split('').map(s => s + s).join('');
+      const r = parseInt(hex.substring(0, 2), 16), g = parseInt(hex.substring(2, 4), 16), b = parseInt(hex.substring(4, 6), 16);
+      return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+    }
+
+    function downloadPage(canvas, pageNum) {
+      const link = document.createElement('a');
+      link.download = `헤무대본_발췌_${pageNum}장.jpg`;
+      link.href = canvas.toDataURL('image/jpeg', 0.95); 
+      link.click();
+    }
+
+    function downloadAllPages() {
+      if (pageCanvasList.length === 0) return showCustomAlert('저장할 이미지가 없습니다.');
+      showCustomConfirm(`전체 ${pageCanvasList.length}개의 페이지 이미지를 다운로드하시겠습니까?`, () => {
+        pageCanvasList.forEach((item, idx) => setTimeout(() => downloadPage(item.canvas, item.idx), idx * 300));
+      });
+    }
+
+    // Global Reset Actions
+    function confirmClearAll() {
+      showCustomConfirm("대사를 전부 삭제하시겠습니까?", () => {
+        state.dialogues = [];
+        commitHistory();
+        renderDialogueList();
+        renderCanvas();
+      });
+    }
+
+    function confirmReset() {
+      showCustomConfirm("스타일 설정을 기본값으로 초기화하시겠습니까?\n(인물, 대사, 저장된 템플릿은 그대로 유지됩니다)", () => {
+        state.config = {
+          width: 1080, height: 1080, fontFamily: "'Gowun Batang', serif", fontSize: 24, nameWidthRatio: 8, lineSpacing: 40,
+          bgColor: '#f5f2eb', fgColor: '#2c221e', paperTexture: 'pulp', pageFooterEnabled: false, footerPosition: 'bottom-left',
+          footerMode: 'unified', footerUnifiedText: '— 헤무대본 제 1장 —', pageTexts: [], autoCrop: false, centerMode: false, bgImage: null, bgOpacity: 50,
+          wrapMode: 'char', narratorAlign: 'left', characterAlign: 'left'
+        };
+        document.getElementById('btn-clear-bg').classList.add('hidden');
+        commitHistory();
+        syncConfigToUI();
+        renderCanvas();
+      });
+    }
+
+    // --- CUSTOM POPUP & DIALOGS ---
+    function showCustomAlert(msg) {
+      document.getElementById('alert-title').innerText = '안내';
+      document.getElementById('alert-message').innerText = msg;
+      document.getElementById('alert-icon').innerHTML = '<i class="fa-solid fa-circle-exclamation text-amber-600"></i>';
+      const confirmBtn = document.getElementById('alert-confirm-btn');
+      confirmBtn.className = 'retro-btn px-6 py-2 text-sm rounded font-bold retro-btn-accent';
+      confirmBtn.onclick = closeAlert;
+      document.getElementById('alert-cancel-btn').classList.add('hidden');
+      document.getElementById('custom-alert').classList.remove('hidden');
+    }
+    function showCustomConfirm(msg, onConfirm) {
+      document.getElementById('alert-title').innerText = '재확인';
+      document.getElementById('alert-message').innerText = msg;
+      document.getElementById('alert-icon').innerHTML = '<i class="fa-solid fa-triangle-exclamation text-red-500"></i>';
+      const confirmBtn = document.getElementById('alert-confirm-btn');
+      confirmBtn.className = 'retro-btn px-6 py-2 text-sm rounded font-bold retro-btn-danger';
+      confirmBtn.onclick = function() { onConfirm(); closeAlert(); };
+      document.getElementById('alert-cancel-btn').classList.remove('hidden');
+      document.getElementById('custom-alert').classList.remove('hidden');
+    }
+    function closeAlert() { document.getElementById('custom-alert').classList.add('hidden'); }
+  </script>
+</body>
+</html>
