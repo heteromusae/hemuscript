@@ -130,7 +130,7 @@
         </button>
 
         <button onclick="confirmReset()" class="retro-btn text-xs px-3 py-1.5 rounded font-semibold retro-btn-danger flex items-center gap-1">
-          <i class="fa-solid fa-arrow-rotate-left"></i> 설정 초기화
+          <i class="fa-solid fa-arrow-rotate-left"></i> 스타일 초기화
         </button>
         <button onclick="confirmClearAll()" class="retro-btn text-xs px-3 py-1.5 rounded font-semibold bg-red-100 border-red-400 text-red-700 flex items-center gap-1">
           <i class="fa-solid fa-trash-can"></i> 대사 전체삭제
@@ -195,6 +195,39 @@
         <button onclick="addDialog()" class="retro-btn px-4 py-2 text-sm rounded font-bold retro-btn-accent flex items-center justify-center gap-2">
           <i class="fa-solid fa-plus"></i> 대사 추가
         </button>
+      </div>
+
+      <!-- Batch Dialog Input (Toggleable) -->
+      <div class="retro-panel p-5 rounded-lg flex flex-col gap-2">
+
+        <h2 class="font-bold text-base flex justify-between items-center w-full cursor-pointer select-none" onclick="toggleBatchPanel()">
+          <span class="flex items-center gap-2"><i class="fa-solid fa-layer-group text-[#8b7355]"></i> 일괄 입력</span>
+          <i id="batch-panel-icon" class="fa-solid fa-chevron-down text-gray-500 text-sm transition-transform"></i>
+        </h2>
+
+        <!-- Accordion Content -->
+        <div id="batch-panel-content" class="hidden flex-col gap-3 mt-1 pt-2 border-t border-[#e8ded4]">
+          <p class="text-[11px] text-gray-500 leading-relaxed">
+            줄바꿈을 기준으로 구분됩니다.<br>줄 앞에 아무 표시가 없으면 <b>나레이션</b>으로, <code class="bg-[#e8ded4] px-1 rounded">인물명:</code> 형식으로 시작하면 해당 인물의 대사로 처리됩니다. (등록되지 않은 인물일 시 자동 등록)<br>아래 등록된 <b>단축어</b>로 줄을 시작해도 해당 인물의 대사로 처리됩니다.
+          </p>
+
+          <!-- Shortcut Management -->
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">인물별 단축어 설정</label>
+            <div id="shortcut-list-container" class="flex flex-col gap-1.5 max-h-32 overflow-y-auto p-1.5 bg-[#fdfcfb] border border-[#d4c5b9] rounded">
+              <!-- Dynamically filled -->
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">일괄 대사 내용</label>
+            <textarea id="batch-input-text" rows="6" placeholder="예)&#10;무언가의 나레이션…&#10;헤무: 안녕하세요&#10;🍀행복한 하루 보내시길 바라요" class="retro-input px-3 py-2 text-sm rounded w-full resize-none"></textarea>
+          </div>
+
+          <button onclick="processBatchInput()" class="retro-btn px-4 py-2 text-sm rounded font-bold retro-btn-accent flex items-center justify-center gap-2">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> 변환하여 추가
+          </button>
+        </div>
       </div>
 
       <!-- Text/Font Settings (Accordion) -->
@@ -568,7 +601,7 @@
 
     // --- STATE, HISTORY & INITIALIZATION ---
     let state = {
-      characters: [{ name: '나레이터', color: '회색' }],
+      characters: [{ name: '나레이터', color: '회색', shortcut: '' }],
       dialogues: [
         { id: '1', char: '나레이터', text: '안개 낀 바닷가, 새벽. 등대의 불빛이 규칙적으로 돌아간다. 파도 소리만이 무대를 채운다.' },
         { id: '2', char: '나레이터', text: '여자가 계단을 올라 창밖을 바라본다. 수평선 너머, 흐릿한 형체가 서서히 등장한다.' }
@@ -680,6 +713,8 @@
             if(state.config.wrapMode === undefined) state.config.wrapMode = 'char';
             if(state.config.narratorAlign === undefined) state.config.narratorAlign = 'left';
             if(state.config.characterAlign === undefined) state.config.characterAlign = 'left';
+            if(state.characters) state.characters.forEach(c => { if (c.shortcut === undefined) c.shortcut = ''; });
+            if(state.templates) state.templates.forEach(t => { if (t.characters) t.characters.forEach(c => { if (c.shortcut === undefined) c.shortcut = ''; }); });
           }
         } catch (e) {
           console.error('로컬스토리지 데이터를 가져오는 중에 오류가 발생했습니다:', e);
@@ -710,6 +745,21 @@
       const content = document.getElementById('style-panel-content');
       const icon = document.getElementById('style-panel-icon');
       
+      if (content.classList.contains('hidden')) {
+        content.classList.remove('hidden');
+        content.classList.add('flex');
+        icon.classList.add('panel-open');
+      } else {
+        content.classList.add('hidden');
+        content.classList.remove('flex');
+        icon.classList.remove('panel-open');
+      }
+    }
+
+    function toggleBatchPanel() {
+      const content = document.getElementById('batch-panel-content');
+      const icon = document.getElementById('batch-panel-icon');
+
       if (content.classList.contains('hidden')) {
         content.classList.remove('hidden');
         content.classList.add('flex');
@@ -1108,6 +1158,54 @@
         opt.innerText = charObj.name;
         select.appendChild(opt);
       });
+
+      renderShortcutList();
+    }
+
+    // --- SHORTCUT MANAGEMENT (for 일괄 입력) ---
+    function renderShortcutList() {
+      const container = document.getElementById('shortcut-list-container');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const shortcutable = state.characters.filter(c => c.name !== '나레이터');
+
+      if (shortcutable.length === 0) {
+        container.innerHTML = '<div class="text-center py-2 text-[11px] text-gray-400">등록된 인물이 없습니다. (나레이션은 표시 없이 그냥 입력하면 돼요)</div>';
+        return;
+      }
+
+      shortcutable.forEach((charObj) => {
+        const row = document.createElement('div');
+        row.className = 'flex items-center gap-2';
+
+        const colorInfo = colorMap[charObj.color] || colorMap['회색'];
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'text-xs font-semibold px-2 py-1 rounded-full border whitespace-nowrap shrink-0';
+        nameSpan.style.backgroundColor = colorInfo.bg;
+        nameSpan.style.color = colorInfo.text;
+        nameSpan.style.borderColor = colorInfo.border;
+        nameSpan.innerText = charObj.name;
+
+        const shortcutInput = document.createElement('input');
+        shortcutInput.type = 'text';
+        shortcutInput.value = charObj.shortcut || '';
+        shortcutInput.placeholder = '단축어 (이모티콘 추천)';
+        shortcutInput.className = 'retro-input px-2 py-1 text-xs rounded w-full';
+        shortcutInput.oninput = function() {
+          charObj.shortcut = this.value;
+          saveLocalState();
+        };
+        shortcutInput.onchange = function() {
+          charObj.shortcut = this.value.trim();
+          this.value = charObj.shortcut;
+          commitHistory();
+        };
+
+        row.appendChild(nameSpan);
+        row.appendChild(shortcutInput);
+        container.appendChild(row);
+      });
     }
 
     function addCharacter() {
@@ -1119,7 +1217,7 @@
       if (!name) return showCustomAlert('인물명을 입력해 주세요.');
       if (state.characters.find(c => c.name === name)) return showCustomAlert('이미 존재하는 인물명입니다.');
       
-      state.characters.push({ name: name, color: color });
+      state.characters.push({ name: name, color: color, shortcut: '' });
       input.value = '';
       commitHistory();
       renderCharacterTags();
@@ -1223,6 +1321,83 @@
       commitHistory();
       renderDialogueList();
       renderCanvas();
+    }
+
+    // --- BATCH DIALOG INPUT ---
+    const AUTO_COLOR_ORDER = ['파랑', '빨강', '초록', '보라', '주황', '분홍', '하늘', '노랑', '검정', '하양'];
+    function pickAutoColor() {
+      const nonNarratorCount = state.characters.filter(c => c.name !== '나레이터').length;
+      return AUTO_COLOR_ORDER[nonNarratorCount % AUTO_COLOR_ORDER.length];
+    }
+
+    function processBatchInput() {
+      const textarea = document.getElementById('batch-input-text');
+      const raw = textarea.value;
+      if (!raw || !raw.trim()) return showCustomAlert('일괄 입력할 내용을 작성해 주세요.');
+
+      const lines = raw.split('\n');
+      const newDialogues = [];
+      const newCharactersCreated = [];
+
+      lines.forEach(rawLine => {
+        const line = rawLine.trim();
+        if (!line) return; // skip blank lines
+
+        let matchedChar = null;
+        let text = null;
+
+        // 1) Check registered shortcuts first (longest shortcut wins if more than one matches)
+        const shortcutCandidates = state.characters
+          .filter(c => c.shortcut && c.shortcut.trim() !== '' && line.startsWith(c.shortcut))
+          .sort((a, b) => b.shortcut.length - a.shortcut.length);
+
+        if (shortcutCandidates.length > 0) {
+          const target = shortcutCandidates[0];
+          matchedChar = target.name;
+          text = line.slice(target.shortcut.length).trim();
+        } else {
+          // 2) Check '인물명:' pattern - everything before the first ':' is the name
+          const colonIdx = line.indexOf(':');
+          if (colonIdx > 0) {
+            const namePart = line.slice(0, colonIdx).trim();
+            const textPart = line.slice(colonIdx + 1).trim();
+            if (namePart) {
+              matchedChar = namePart;
+              text = textPart;
+            }
+          }
+        }
+
+        if (matchedChar) {
+          let charObj = state.characters.find(c => c.name === matchedChar);
+          if (!charObj) {
+            charObj = { name: matchedChar, color: pickAutoColor(), shortcut: '' };
+            state.characters.push(charObj);
+            newCharactersCreated.push(matchedChar);
+          }
+          if (!text) text = line; // safety fallback, shouldn't normally trigger
+          newDialogues.push({ id: Date.now().toString() + '_' + Math.random().toString(36).slice(2, 7), char: matchedChar, text: text });
+        } else {
+          // No marker found -> narration
+          newDialogues.push({ id: Date.now().toString() + '_' + Math.random().toString(36).slice(2, 7), char: '나레이터', text: line });
+        }
+      });
+
+      if (newDialogues.length === 0) return showCustomAlert('변환할 수 있는 내용을 찾지 못했습니다.');
+
+      state.dialogues = state.dialogues.concat(newDialogues);
+      textarea.value = '';
+
+      commitHistory();
+      renderCharacterTags();
+      renderDialogueList();
+      renderCanvas();
+
+      let msg = `${newDialogues.length}개의 대사가 추가되었습니다.`;
+      if (newCharactersCreated.length > 0) {
+        msg += `\n새로 생성된 인물: ${newCharactersCreated.join(', ')}`;
+      }
+      showCustomAlert(msg);
     }
 
     function deleteDialogue(id) {
@@ -1754,28 +1929,16 @@
     }
 
     function confirmReset() {
-      showCustomConfirm("모든 설정 및 데이터를 초기화하시겠습니까?\n(사용자 템플릿도 모두 삭제됩니다)", () => {
-        localStorage.removeItem('PLAY_SCRIPT_MAKER_STATE_v6');
-        state = {
-          characters: [{ name: '나레이터', color: '회색' }],
-          dialogues: [
-            { id: '1', char: '나레이터', text: '안개 낀 바닷가, 새벽. 등대의 불빛이 규칙적으로 돌아간다. 파도 소리만이 무대를 채운다.' },
-            { id: '2', char: '나레이터', text: '여자가 계단을 올라 창밖을 바라본다. 수평선 너머, 흐릿한 형체가 서서히 등장한다.' }
-          ],
-          config: {
-            width: 1080, height: 1080, fontFamily: "'Gowun Batang', serif", fontSize: 24, nameWidthRatio: 8, lineSpacing: 40,
-            bgColor: '#f5f2eb', fgColor: '#2c221e', paperTexture: 'pulp', pageFooterEnabled: true, footerPosition: 'bottom-left',
-            footerMode: 'unified', footerUnifiedText: '— 헤무대본 제 1장 —', pageTexts: [], autoCrop: false, bgImage: null, bgOpacity: 50,
-            wrapMode: 'char', narratorAlign: 'left', characterAlign: 'left'
-          },
-          templates: []
+      showCustomConfirm("스타일 설정을 기본값으로 초기화하시겠습니까?\n(인물, 대사, 저장된 템플릿은 그대로 유지됩니다)", () => {
+        state.config = {
+          width: 1080, height: 1080, fontFamily: "'Gowun Batang', serif", fontSize: 24, nameWidthRatio: 8, lineSpacing: 40,
+          bgColor: '#f5f2eb', fgColor: '#2c221e', paperTexture: 'pulp', pageFooterEnabled: true, footerPosition: 'bottom-left',
+          footerMode: 'unified', footerUnifiedText: '— 헤무대본 제 1장 —', pageTexts: [], autoCrop: false, bgImage: null, bgOpacity: 50,
+          wrapMode: 'char', narratorAlign: 'left', characterAlign: 'left'
         };
-        saveLocalState();
-        initHistory();
+        document.getElementById('btn-clear-bg').classList.add('hidden');
+        commitHistory();
         syncConfigToUI();
-        renderCharacterTags();
-        renderUserTemplates();
-        renderDialogueList();
         renderCanvas();
       });
     }
