@@ -1766,12 +1766,12 @@
           ctx.textAlign = 'left';
 
           switch (conf.footerPosition) {
-            case 'bottom-left':   fx = padL + 2; fy = fyBottom; break;
+            case 'bottom-left':   fx = padL + 0; fy = fyBottom; break;
             case 'bottom-center': fx = cWidth / 2; fy = fyBottom; ctx.textAlign = 'center'; break;
-            case 'bottom-right':  fx = cWidth - padR - 2; fy = fyBottom; ctx.textAlign = 'right'; break;
-            case 'top-left':      fx = padL + 2; fy = fyTop; break;
+            case 'bottom-right':  fx = cWidth - padR - 0; fy = fyBottom; ctx.textAlign = 'right'; break;
+            case 'top-left':      fx = padL + 0; fy = fyTop; break;
             case 'top-center':    fx = cWidth / 2; fy = fyTop; ctx.textAlign = 'center'; break;
-            case 'top-right':     fx = cWidth - padR - 2; fy = fyTop; ctx.textAlign = 'right'; break;
+            case 'top-right':     fx = cWidth - padR - 0; fy = fyTop; ctx.textAlign = 'right'; break;
           }
 
           if(footerStr) ctx.fillText(footerStr, fx, fy);
