@@ -242,12 +242,18 @@
         <div id="style-panel-content" class="flex flex-col gap-4 mt-2">
           <!-- Canvas Dimensions & Ratio Presets -->
           <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-1 flex justify-between items-center">
+            <label class="block text-xs font-semibold text-gray-600 mb-1.5 flex justify-between items-center flex-wrap gap-y-1.5">
               <span>캔버스 이미지 크기 & 비율</span>
-              <label class="flex items-center gap-1 cursor-pointer">
-                <input type="checkbox" id="auto-crop-toggle" onchange="updateConfigState(); commitHistory(); renderCanvas();" class="accent-[#8b7355]">
-                <span class="text-[10px] font-bold text-[#8b7355]">여백 자동 크롭</span>
-              </label>
+              <span class="flex items-center gap-3">
+                <label class="flex items-center gap-1 cursor-pointer" title="여백 자동 크롭과 함께 사용할 수 없어요">
+                  <input type="checkbox" id="center-mode-toggle" onchange="handleCenterModeToggle()" class="accent-[#8b7355]">
+                  <span class="text-[10px] font-bold text-[#8b7355]">중앙부터 입력</span>
+                </label>
+                <label class="flex items-center gap-1 cursor-pointer" title="중앙부터 입력과 함께 사용할 수 없어요">
+                  <input type="checkbox" id="auto-crop-toggle" onchange="handleAutoCropToggle()" class="accent-[#8b7355]">
+                  <span class="text-[10px] font-bold text-[#8b7355]">여백 자동 크롭</span>
+                </label>
+              </span>
             </label>
             <div class="grid grid-cols-4 gap-1.5 mb-2">
               <button onclick="setPresetRatio(1080, 1080)" class="retro-btn text-[10px] py-1 rounded">1:1</button>
@@ -622,6 +628,7 @@
         footerUnifiedText: '— 헤무대본 제 1장 —',
         pageTexts: [],
         autoCrop: false,
+        centerMode: false,
         bgImage: null,
         bgOpacity: 50,
         wrapMode: 'char',
@@ -709,6 +716,7 @@
             if(!state.config.pageTexts) state.config.pageTexts = [];
             if(!state.templates) state.templates = [];
             if(state.config.autoCrop === undefined) state.config.autoCrop = false;
+            if(state.config.centerMode === undefined) state.config.centerMode = false;
             if(state.config.bgOpacity === undefined) state.config.bgOpacity = 50;
             if(state.config.wrapMode === undefined) state.config.wrapMode = 'char';
             if(state.config.narratorAlign === undefined) state.config.narratorAlign = 'left';
@@ -854,6 +862,7 @@
       document.getElementById('footer-unified-text').value = conf.footerUnifiedText;
       
       document.getElementById('auto-crop-toggle').checked = conf.autoCrop;
+      document.getElementById('center-mode-toggle').checked = conf.centerMode;
       document.getElementById('bg-opacity').value = conf.bgOpacity;
       document.getElementById('bg-opacity-val').innerText = conf.bgOpacity + '%';
 
@@ -889,6 +898,7 @@
         conf.footerUnifiedText = document.getElementById('footer-unified-text').value;
 
         conf.autoCrop = document.getElementById('auto-crop-toggle').checked;
+        conf.centerMode = document.getElementById('center-mode-toggle').checked;
         conf.bgOpacity = parseInt(document.getElementById('bg-opacity').value) || 50;
 
         conf.wrapMode = document.getElementById('wrap-mode').value;
@@ -926,6 +936,24 @@
         document.getElementById('footer-split-input-wrapper').classList.remove('hidden');
         document.getElementById('footer-split-input-wrapper').classList.add('flex');
       }
+    }
+
+    function handleAutoCropToggle() {
+      if (document.getElementById('auto-crop-toggle').checked) {
+        document.getElementById('center-mode-toggle').checked = false;
+      }
+      updateConfigState();
+      commitHistory();
+      renderCanvas();
+    }
+
+    function handleCenterModeToggle() {
+      if (document.getElementById('center-mode-toggle').checked) {
+        document.getElementById('auto-crop-toggle').checked = false;
+      }
+      updateConfigState();
+      commitHistory();
+      renderCanvas();
     }
 
     function setPresetRatio(w, h) {
@@ -1521,6 +1549,16 @@
       });
     }
 
+    // Sums item heights + inter-item spacing for a page's dialogue block (used by 중앙부터 입력 mode)
+    function computeDialogueBlockHeight(pageData, lineSpacing) {
+      let h = 0;
+      pageData.forEach((item, idx) => {
+        if (idx > 0) h += lineSpacing;
+        h += item.calculatedHeight;
+      });
+      return h;
+    }
+
     async function renderCanvas(skipInputSync = false) {
       const container = document.getElementById('canvas-preview-container');
       const conf = state.config;
@@ -1622,7 +1660,7 @@
       pages.forEach((pageData, pageIdx) => {
         // Auto Crop Logic Calculation - FIXED
         let targetHeight = cHeight;
-        if (conf.autoCrop && pageIdx === pages.length - 1) {
+        if (conf.autoCrop && !conf.centerMode && pageIdx === pages.length - 1) {
           let yPos = padT;
           pageData.forEach((item, itemIdx) => {
             if (itemIdx > 0) yPos += conf.lineSpacing;
@@ -1635,6 +1673,32 @@
           }
           
           targetHeight = Math.min(cHeight, yPos + padB);
+        }
+
+        // 중앙부터 입력 (Center Mode) Layout Calculation
+        // The dialogue block (and footer, if it hugs the content) is treated as one unit
+        // and centered vertically within the fixed canvas height.
+        const footerGap = 24;
+        const footerFontSizeCalc = Math.max(12, conf.fontSize * 0.55) + 1;
+        const footerIsTop = conf.pageFooterEnabled && conf.footerPosition.startsWith('top');
+        const footerIsBottom = conf.pageFooterEnabled && conf.footerPosition.startsWith('bottom');
+        let centerDialogueStartY = padT;
+        let centerFooterY = 0;
+        if (conf.centerMode) {
+          const dialogueBlockHeight = computeDialogueBlockHeight(pageData, conf.lineSpacing);
+          const footerBlockHeight = conf.pageFooterEnabled ? (footerFontSizeCalc + footerGap) : 0;
+          const totalBlockHeight = dialogueBlockHeight + footerBlockHeight;
+          const blockTop = (targetHeight - totalBlockHeight) / 2;
+
+          if (footerIsTop) {
+            centerFooterY = blockTop;
+            centerDialogueStartY = blockTop + footerFontSizeCalc + footerGap;
+          } else if (footerIsBottom) {
+            centerDialogueStartY = blockTop;
+            centerFooterY = blockTop + dialogueBlockHeight + footerGap;
+          } else {
+            centerDialogueStartY = blockTop;
+          }
         }
 
         const pageCanvas = document.createElement('canvas');
@@ -1694,9 +1758,9 @@
           }
 
           let fx = padL + 10;
-          // Footer Y pos responds to the new targetHeight dynamically
-          let fyBottom = targetHeight - (padB / 2) - 25;
-          let fyTop = (padT / 2) + 25;
+          // Footer Y pos responds to the new targetHeight dynamically (or hugs the content block in center mode)
+          let fyBottom = conf.centerMode ? centerFooterY : (targetHeight - (padB / 2) - 25);
+          let fyTop = conf.centerMode ? centerFooterY : ((padT / 2) + 25);
           
           let fy = fyBottom; 
           ctx.textAlign = 'left';
@@ -1715,7 +1779,7 @@
         }
 
         // Draw Dialogue Elements
-        let yPos = padT;
+        let yPos = conf.centerMode ? centerDialogueStartY : padT;
         pageData.forEach((item, itemIdx) => {
           if (itemIdx > 0) yPos += conf.lineSpacing;
           
@@ -1933,7 +1997,7 @@
         state.config = {
           width: 1080, height: 1080, fontFamily: "'Gowun Batang', serif", fontSize: 24, nameWidthRatio: 8, lineSpacing: 40,
           bgColor: '#f5f2eb', fgColor: '#2c221e', paperTexture: 'pulp', pageFooterEnabled: false, footerPosition: 'bottom-left',
-          footerMode: 'unified', footerUnifiedText: '— 헤무대본 제 1장 —', pageTexts: [], autoCrop: false, bgImage: null, bgOpacity: 50,
+          footerMode: 'unified', footerUnifiedText: '— 헤무대본 제 1장 —', pageTexts: [], autoCrop: false, centerMode: false, bgImage: null, bgOpacity: 50,
           wrapMode: 'char', narratorAlign: 'left', characterAlign: 'left'
         };
         document.getElementById('btn-clear-bg').classList.add('hidden');
