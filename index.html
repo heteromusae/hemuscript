@@ -570,8 +570,8 @@
     let state = {
       characters: [{ name: '나레이터', color: '회색' }],
       dialogues: [
-        { id: '1', char: '나레이터', text: '(희미한 전등 아래, 먼지 쌓인 원고지가 흩뿌려져 있다.)' },
-        { id: '2', char: '나레이터', text: '결국은 우리 모두 무대 위의 연기자일 뿐이오.' }
+        { id: '1', char: '나레이터', text: '안개 낀 바닷가, 새벽. 등대의 불빛이 규칙적으로 돌아간다. 파도 소리만이 무대를 채운다.' },
+        { id: '2', char: '나레이터', text: '여자가 계단을 올라 창밖을 바라본다. 수평선 너머, 흐릿한 형체가 서서히 등장한다.' }
       ],
       config: {
         width: 1080,
@@ -1215,7 +1215,7 @@
       const dialogText = document.getElementById('dialog-text');
       const char = charSelect.value || '나레이터';
       const text = dialogText.value.trim();
-      if (!text) return showCustomAlert('대사 내용을 입력해 주세요.');
+      if (!text) return showCustomAlert('내용을 입력해 주세요.');
 
       state.dialogues.push({ id: Date.now().toString(), char: char, text: text });
       dialogText.value = '';
@@ -1352,7 +1352,7 @@
       const dList = state.dialogues;
 
       if (dList.length === 0) {
-        container.innerHTML = '<div class="text-center py-10 text-gray-600 bg-white/50 w-full rounded border-dashed border-2 border-gray-300">표시할 대사가 없습니다. 대사를 먼저 입력해 주세요.</div>';
+        container.innerHTML = '<div class="text-center py-10 text-gray-600 bg-white/50 w-full rounded border-dashed border-2 border-gray-300">표시할 내용이 없습니다. 내용을 입력해 주세요.</div>';
         pageCanvasList = [];
         if(!skipInputSync && prevPageCount !== 0) {
            syncPageTextInputs(0);
@@ -1745,7 +1745,7 @@
 
     // Global Reset Actions
     function confirmClearAll() {
-      showCustomConfirm("정말 대사를 전부 삭제하시겠습니까?", () => {
+      showCustomConfirm("대사를 전부 삭제하시겠습니까?", () => {
         state.dialogues = [];
         commitHistory();
         renderDialogueList();
