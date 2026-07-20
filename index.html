@@ -11,7 +11,7 @@
   <!-- Google Fonts & Custom Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@300;400;500;700&family=Nanum+Myeongjo:wght@400;700;800&family=Courier+Prime:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@300;400;500;700&family=Nanum+Myeongjo:wght@400;700;800&display=swap" rel="stylesheet">
   <!-- Pickr CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/themes/classic.min.css"/>
   <!-- Cropper.js CSS -->
@@ -120,19 +120,24 @@
           <h1 class="text-xl md:text-2xl font-bold tracking-tight font-serif text-[#5c4a37]">헤무대본</h1>
         </div>
       </div>
-      <div class="flex gap-2 flex-wrap justify-end">
+      <div class="flex gap-1.5 flex-wrap justify-end items-center">
+        <!-- Warning Popups Management -->
+        <button onclick="openWarningsModal()" class="retro-btn text-[11px] px-2 py-1 rounded font-semibold flex items-center gap-1" title="경고 팝업 관리">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+
         <!-- Undo/Redo Buttons -->
-        <button onclick="undo()" id="btn-undo" class="retro-btn text-xs px-3 py-1.5 rounded font-semibold flex items-center gap-1" title="실행 취소">
+        <button onclick="undo()" id="btn-undo" class="retro-btn text-[11px] px-2 py-1 rounded font-semibold flex items-center gap-1" title="실행 취소">
           <i class="fa-solid fa-rotate-left"></i>
         </button>
-        <button onclick="redo()" id="btn-redo" class="retro-btn text-xs px-3 py-1.5 rounded font-semibold flex items-center gap-1 mr-2" title="다시 실행">
+        <button onclick="redo()" id="btn-redo" class="retro-btn text-[11px] px-2 py-1 rounded font-semibold flex items-center gap-1 mr-1" title="다시 실행">
           <i class="fa-solid fa-rotate-right"></i>
         </button>
 
-        <button onclick="confirmReset()" class="retro-btn text-xs px-3 py-1.5 rounded font-semibold retro-btn-danger flex items-center gap-1">
-          <i class="fa-solid fa-arrow-rotate-left"></i> 스타일 초기화
+        <button onclick="confirmReset()" class="retro-btn text-[11px] px-2 py-1 rounded font-semibold retro-btn-danger flex items-center gap-1">
+          <i class="fa-solid fa-arrow-rotate-left"></i> 전체 초기화
         </button>
-        <button onclick="confirmClearAll()" class="retro-btn text-xs px-3 py-1.5 rounded font-semibold bg-red-100 border-red-400 text-red-700 flex items-center gap-1">
+        <button onclick="confirmClearAll()" class="retro-btn text-[11px] px-2 py-1 rounded font-semibold bg-red-100 border-red-400 text-red-700 flex items-center gap-1">
           <i class="fa-solid fa-trash-can"></i> 대사 전체삭제
         </button>
       </div>
@@ -233,13 +238,13 @@
       <!-- Text/Font Settings (Accordion) -->
       <div class="retro-panel p-5 rounded-lg flex flex-col gap-2">
         
-        <h2 class="font-bold text-base flex justify-between items-center w-full cursor-pointer border-b border-[#e8ded4] pb-2 select-none" onclick="toggleStylePanel()">
+        <h2 class="font-bold text-base flex justify-between items-center w-full cursor-pointer select-none" onclick="toggleStylePanel()">
           <span class="flex items-center gap-2"><i class="fa-solid fa-sliders text-[#8b7355]"></i> 스타일 설정</span>
           <i id="style-panel-icon" class="fa-solid fa-chevron-down text-gray-500 text-sm transition-transform panel-open"></i>
         </h2>
         
         <!-- Accordion Content -->
-        <div id="style-panel-content" class="flex flex-col gap-4 mt-2">
+        <div id="style-panel-content" class="flex flex-col gap-4 mt-1 pt-2 border-t border-[#e8ded4]">
           <!-- Canvas Dimensions & Ratio Presets -->
           <div>
             <label class="block text-xs font-semibold text-gray-600 mb-1.5 flex justify-between items-center flex-wrap gap-y-1.5">
@@ -274,13 +279,12 @@
           </div>
 
           <!-- Fonts & Text Styles -->
-          <div class="grid grid-cols-2 gap-3">
+          <div class="grid grid-cols-2 gap-3 border-t border-[#e8ded4] pt-3">
             <div>
               <label class="block text-xs font-semibold text-gray-600 mb-1">서체 설정</label>
               <select id="font-family" onchange="updateConfigState(); commitHistory(); renderCanvas();" class="retro-input px-2 py-1.5 text-xs rounded w-full">
                 <option value="'Gowun Batang', serif">고운 바탕체</option>
                 <option value="'Nanum Myeongjo', serif">나눔 명조체</option>
-                <option value="'Courier Prime', monospace">쿠리어 옛타자기</option>
                 <option value="'Noto Sans KR', sans-serif">고딕 본문체</option>
                 <option value="'ChosunIlboMyungjo', serif">조선일보 명조</option>
                 <option value="'MaruBuri', serif">마루 부리</option>
@@ -338,7 +342,7 @@
           </div>
 
           <!-- Pickr Colors & Preset Templates -->
-          <div>
+          <div class="border-t border-[#e8ded4] pt-3">
             <label class="block text-xs font-semibold text-gray-600 mb-1">디자인 컬러 프리셋</label>
             <div class="grid grid-cols-3 gap-1.5 mb-3">
               <button onclick="applyColorTemplate('#f5f2eb', '#2c221e')" class="retro-btn text-[10px] py-1 rounded">빈티지 극본 (Light)</button>
@@ -410,7 +414,7 @@
             <div class="flex justify-between items-center mb-2">
               <label class="text-xs font-bold text-gray-600">상단/하단 문구 삽입</label>
               <label class="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" id="page-footer-toggle" onchange="updateConfigState(); commitHistory(); renderCanvas();" class="sr-only peer" checked>
+                <input type="checkbox" id="page-footer-toggle" onchange="updateConfigState(); commitHistory(); renderCanvas();" class="sr-only peer">
                 <div class="w-9 h-5 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#8b7355]"></div>
               </label>
             </div>
@@ -450,14 +454,20 @@
 
           <!-- Custom User Templates -->
           <div class="border-t border-[#e8ded4] pt-3 mt-1">
-            <div class="flex justify-between items-center mb-2">
+            <div class="flex justify-between items-center mb-2 flex-wrap gap-y-2">
               <div>
                 <label class="text-xs font-bold text-gray-600 block">내 템플릿 관리</label>
                 <span class="text-[10px] text-gray-500">인물 목록 및 대본 스타일 저장</span>
               </div>
-              <button onclick="openTemplateModal()" class="retro-btn text-xs font-bold px-3 py-1.5 rounded retro-btn-accent shadow-sm">
-                <i class="fa-solid fa-floppy-disk mr-1"></i> 현재 상태 저장
-              </button>
+              <div class="flex gap-1.5">
+                <input type="file" id="template-file-input" accept=".json,application/json" onchange="handleTemplateFileImport(event)" class="hidden">
+                <button onclick="document.getElementById('template-file-input').click()" class="retro-btn text-xs font-bold px-3 py-1.5 rounded shadow-sm" title="파일에서 템플릿 불러오기">
+                  <i class="fa-solid fa-folder-open mr-1"></i> 파일 불러오기
+                </button>
+                <button onclick="openTemplateModal()" class="retro-btn text-xs font-bold px-3 py-1.5 rounded retro-btn-accent shadow-sm">
+                  <i class="fa-solid fa-floppy-disk mr-1"></i> 현재 상태 저장
+                </button>
+              </div>
             </div>
             <div id="user-templates-container" class="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto bg-[#fdfcfb] p-2 border border-[#d4c5b9] rounded">
               <!-- Dynamically populated templates -->
@@ -473,11 +483,16 @@
       
       <!-- Dialogue List & Re-ordering/Editing -->
       <div class="retro-panel p-5 rounded-lg flex flex-col gap-3">
-        <div class="flex justify-between items-center border-b border-[#e8ded4] pb-2">
+        <div class="flex justify-between items-center border-b border-[#e8ded4] pb-2 flex-wrap gap-y-1.5">
           <h2 class="font-bold text-base flex items-center gap-2">
             <i class="fa-solid fa-list-check text-[#8b7355]"></i> 내용 수정 및 순서 변경
           </h2>
-          <span class="text-xs text-gray-500">드래그하여 순서 변경</span>
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] text-gray-500 hidden sm:inline">드래그하여 순서 변경</span>
+            <button onclick="addPageBreak()" class="retro-btn text-[11px] px-2.5 py-1.5 rounded flex items-center gap-1">
+              <i class="fa-solid fa-scissors"></i> 페이지 나누기 추가
+            </button>
+          </div>
         </div>
 
         <div class="max-h-64 overflow-y-auto border border-[#e8ded4] rounded p-2 bg-[#fdfcfb] flex flex-col gap-2" id="dialogue-list">
@@ -568,6 +583,50 @@
     </div>
   </div>
 
+  <!-- Warning Popups Management Modal -->
+  <div id="warnings-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
+    <div class="retro-panel p-6 rounded-lg w-full max-w-sm flex flex-col gap-4">
+      <h3 class="font-bold text-lg text-[#5c4a37] border-b border-[#e8ded4] pb-2 flex items-center gap-2">
+        <i class="fa-solid fa-triangle-exclamation"></i> 경고 팝업 관리
+      </h3>
+
+      <div class="flex flex-col gap-3">
+        <label class="flex items-center justify-between gap-3 cursor-pointer">
+          <span class="text-sm font-semibold text-[#5c4a37]">전체 초기화</span>
+          <span class="relative inline-flex items-center">
+            <input type="checkbox" id="warn-reset-toggle" checked onchange="handleWarningToggle('reset','warn-reset-toggle')" class="sr-only peer">
+            <div class="w-9 h-5 bg-gray-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#8b7355]"></div>
+          </span>
+        </label>
+        <label class="flex items-center justify-between gap-3 cursor-pointer">
+          <span class="text-sm font-semibold text-[#5c4a37]">대사 전체삭제</span>
+          <span class="relative inline-flex items-center">
+            <input type="checkbox" id="warn-clearall-toggle" checked onchange="handleWarningToggle('clearAll','warn-clearall-toggle')" class="sr-only peer">
+            <div class="w-9 h-5 bg-gray-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#8b7355]"></div>
+          </span>
+        </label>
+        <label class="flex items-center justify-between gap-3 cursor-pointer">
+          <span class="text-sm font-semibold text-[#5c4a37]">일괄 입력 변환</span>
+          <span class="relative inline-flex items-center">
+            <input type="checkbox" id="warn-batchinput-toggle" checked onchange="handleWarningToggle('batchInput','warn-batchinput-toggle')" class="sr-only peer">
+            <div class="w-9 h-5 bg-gray-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#8b7355]"></div>
+          </span>
+        </label>
+        <label class="flex items-center justify-between gap-3 cursor-pointer">
+          <span class="text-sm font-semibold text-[#5c4a37]">이미지 저장</span>
+          <span class="relative inline-flex items-center">
+            <input type="checkbox" id="warn-imagesave-toggle" checked onchange="handleWarningToggle('imageSave','warn-imagesave-toggle')" class="sr-only peer">
+            <div class="w-9 h-5 bg-gray-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#8b7355]"></div>
+          </span>
+        </label>
+      </div>
+
+      <div class="flex justify-end gap-2 mt-2">
+        <button onclick="closeWarningsModal()" class="retro-btn px-6 py-2 text-sm rounded font-bold retro-btn-accent">닫기</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Custom Alert/Confirm Popup -->
   <div id="custom-alert" class="fixed inset-0 bg-black/50 z-[70] flex items-center justify-center hidden p-4">
     <div class="retro-panel p-6 rounded-lg w-full max-w-md flex flex-col gap-4 text-center">
@@ -647,6 +706,50 @@
     let prevPageCount = 0;
     
     let cropperInstance = null;
+
+    // Warning popups are a standalone app preference (not part of state/history/templates)
+    let warningSettings = {
+      reset: true,
+      clearAll: true,
+      batchInput: true,
+      imageSave: true
+    };
+    const WARNING_TOGGLE_MAP = {
+      'warn-reset-toggle': 'reset',
+      'warn-clearall-toggle': 'clearAll',
+      'warn-batchinput-toggle': 'batchInput',
+      'warn-imagesave-toggle': 'imageSave'
+    };
+    function loadWarningsSetting() {
+      const saved = localStorage.getItem('PLAY_SCRIPT_MAKER_WARNINGS_v2');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          warningSettings = { ...warningSettings, ...parsed };
+        } catch (e) { /* ignore malformed data, keep defaults */ }
+      }
+      syncWarningsModalUI();
+    }
+    function saveWarningsSetting() {
+      localStorage.setItem('PLAY_SCRIPT_MAKER_WARNINGS_v2', JSON.stringify(warningSettings));
+    }
+    function syncWarningsModalUI() {
+      Object.keys(WARNING_TOGGLE_MAP).forEach(toggleId => {
+        const el = document.getElementById(toggleId);
+        if (el) el.checked = warningSettings[WARNING_TOGGLE_MAP[toggleId]];
+      });
+    }
+    function handleWarningToggle(key, toggleId) {
+      warningSettings[key] = document.getElementById(toggleId).checked;
+      saveWarningsSetting();
+    }
+    function openWarningsModal() {
+      syncWarningsModalUI();
+      document.getElementById('warnings-modal').classList.remove('hidden');
+    }
+    function closeWarningsModal() {
+      document.getElementById('warnings-modal').classList.add('hidden');
+    }
 
     function initHistory() {
       historyStack = [JSON.stringify(state)];
@@ -730,12 +833,23 @@
       }
     }
 
+    let localStorageQuotaWarned = false;
     function saveLocalState() {
-      localStorage.setItem('PLAY_SCRIPT_MAKER_STATE_v6', JSON.stringify(state));
+      try {
+        localStorage.setItem('PLAY_SCRIPT_MAKER_STATE_v6', JSON.stringify(state));
+        localStorageQuotaWarned = false;
+      } catch (e) {
+        console.error('로컬 저장 실패 (저장 공간 부족 가능성):', e);
+        if (!localStorageQuotaWarned) {
+          localStorageQuotaWarned = true;
+          showCustomAlert('브라우저 저장 공간이 부족해서 방금 변경 사항이 기기에 자동 저장되지 않았습니다.\n배경 이미지가 크거나 템플릿이 많으면 발생할 수 있어요. 지금 작업 중인 내용은 화면에 남아있지만 새로고침하면 사라질 수 있으니, 템플릿을 파일로 내보내 백업해 두는 것을 추천해요.');
+        }
+      }
     }
 
     window.onload = function() {
       loadSavedState();
+      loadWarningsSetting();
       initHistory(); 
       initPickr();
       syncConfigToUI();
@@ -1046,21 +1160,31 @@
         const btnGroup = document.createElement('div');
         btnGroup.className = 'flex gap-1 ml-2 shrink-0';
         
+        const exportBtn = document.createElement('button');
+        exportBtn.className = 'p-1.5 hover:bg-amber-50 rounded text-[#8b7355] transition-colors';
+        exportBtn.innerHTML = '<i class="fa-solid fa-print"></i>';
+        exportBtn.title = '파일로 저장';
+        exportBtn.onclick = () => exportTemplateToFile(t.id);
+
         const loadBtn = document.createElement('button');
-        loadBtn.className = 'retro-btn px-2 py-1 text-[10px] rounded hover:bg-amber-50';
-        loadBtn.innerText = '불러오기';
+        loadBtn.className = 'p-1.5 hover:bg-amber-50 rounded text-[#8b7355] transition-colors';
+        loadBtn.innerHTML = '<i class="fa-solid fa-upload"></i>';
+        loadBtn.title = '불러오기';
         loadBtn.onclick = () => loadUserTemplate(t.id);
 
         const editBtn = document.createElement('button');
-        editBtn.className = 'retro-btn px-2 py-1 text-[10px] rounded hover:bg-amber-50';
-        editBtn.innerText = '수정';
+        editBtn.className = 'p-1.5 hover:bg-amber-50 rounded text-[#8b7355] transition-colors';
+        editBtn.innerHTML = '<i class="fa-solid fa-pen"></i>';
+        editBtn.title = '수정';
         editBtn.onclick = () => openTemplateModal(t.id);
         
         const delBtn = document.createElement('button');
-        delBtn.className = 'retro-btn px-2 py-1 text-[10px] rounded text-red-600 hover:bg-red-50';
-        delBtn.innerText = '삭제';
+        delBtn.className = 'p-1.5 hover:bg-red-50 rounded text-red-600 transition-colors';
+        delBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
+        delBtn.title = '삭제';
         delBtn.onclick = () => deleteUserTemplate(t.id);
 
+        btnGroup.appendChild(exportBtn);
         btnGroup.appendChild(loadBtn);
         btnGroup.appendChild(editBtn);
         btnGroup.appendChild(delBtn);
@@ -1069,6 +1193,58 @@
         item.appendChild(btnGroup);
         container.appendChild(item);
       });
+    }
+
+    // --- TEMPLATE FILE EXPORT / IMPORT ---
+    function exportTemplateToFile(id) {
+      const t = state.templates.find(x => x.id === id);
+      if (!t) return;
+      const exportData = {
+        hemuScriptTemplate: true,
+        version: 1,
+        name: t.name,
+        characters: t.characters,
+        config: t.config
+      };
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${t.name || '템플릿'}.hemutpl.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function handleTemplateFileImport(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        try {
+          const parsed = JSON.parse(event.target.result);
+          if (!parsed || !parsed.characters || !parsed.config) {
+            showCustomAlert('올바른 템플릿 파일이 아닙니다.');
+            return;
+          }
+          const newTemplate = {
+            id: Date.now().toString(),
+            name: parsed.name || '가져온 템플릿',
+            characters: parsed.characters.map(c => ({
+              name: c.name, color: c.color || '회색', shortcut: c.shortcut || ''
+            })),
+            config: parsed.config
+          };
+          state.templates.push(newTemplate);
+          commitHistory();
+          renderUserTemplates();
+          showCustomAlert(`"${newTemplate.name}" 템플릿을 내 템플릿 목록에 추가했습니다.`);
+        } catch (err) {
+          showCustomAlert('파일을 읽는 중 오류가 발생했습니다. 올바른 템플릿 파일인지 확인해 주세요.');
+        }
+      };
+      reader.readAsText(file);
+      e.target.value = ''; // allow re-importing the same file later
     }
 
     function openTemplateModal(editId = null) {
@@ -1273,14 +1449,49 @@
       }
       state.dialogues.forEach((d, idx) => {
         const item = document.createElement('div');
-        item.className = 'flex items-start justify-between gap-3 p-3 bg-white border border-[#e8ded4] rounded shadow-sm hover:border-[#8b7355] transition-all relative group';
         item.setAttribute('draggable', 'true');
         item.setAttribute('data-id', d.id);
-        
         item.ondragstart = handleDragStart;
         item.ondragover = handleDragOver;
         item.ondrop = handleDrop;
         item.ondragend = handleDragEnd;
+
+        if (d.type === 'pagebreak') {
+          item.className = 'flex items-center justify-between gap-3 px-3 py-2 bg-[#f4eae1] border-2 border-dashed border-[#8b7355]/60 rounded relative group';
+
+          const label = document.createElement('div');
+          label.className = 'flex items-center gap-2 text-xs font-bold text-[#8b7355] cursor-grab active:cursor-grabbing';
+          label.innerHTML = '<i class="fa-solid fa-scissors"></i>';
+
+          const btnArea = document.createElement('div');
+          btnArea.className = 'flex gap-1';
+
+          const upBtn = document.createElement('button');
+          upBtn.className = 'p-1 hover:bg-white/60 rounded text-[#8b7355] text-xs transition-colors';
+          upBtn.innerHTML = '<i class="fa-solid fa-chevron-up"></i>';
+          upBtn.onclick = () => moveDialogue(idx, -1);
+
+          const downBtn = document.createElement('button');
+          downBtn.className = 'p-1 hover:bg-white/60 rounded text-[#8b7355] text-xs transition-colors';
+          downBtn.innerHTML = '<i class="fa-solid fa-chevron-down"></i>';
+          downBtn.onclick = () => moveDialogue(idx, 1);
+
+          const delBtn = document.createElement('button');
+          delBtn.className = 'p-1 hover:bg-red-50 rounded text-red-600 text-xs transition-colors';
+          delBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
+          delBtn.onclick = () => deleteDialogue(d.id);
+
+          btnArea.appendChild(upBtn);
+          btnArea.appendChild(downBtn);
+          btnArea.appendChild(delBtn);
+
+          item.appendChild(label);
+          item.appendChild(btnArea);
+          container.appendChild(item);
+          return;
+        }
+
+        item.className = 'flex items-start justify-between gap-3 p-3 bg-white border border-[#e8ded4] rounded shadow-sm hover:border-[#8b7355] transition-all relative group';
 
         const textWrapper = document.createElement('div');
         textWrapper.className = 'flex-grow pr-12 cursor-grab active:cursor-grabbing';
@@ -1336,6 +1547,13 @@
       });
     }
 
+    function addPageBreak() {
+      state.dialogues.push({ id: Date.now().toString() + '_break', type: 'pagebreak' });
+      commitHistory();
+      renderDialogueList();
+      renderCanvas();
+    }
+
     function addDialog() {
       const charSelect = document.getElementById('char-select');
       const dialogText = document.getElementById('dialog-text');
@@ -1363,69 +1581,78 @@
       const raw = textarea.value;
       if (!raw || !raw.trim()) return showCustomAlert('일괄 입력할 내용을 작성해 주세요.');
 
-      const lines = raw.split('\n');
-      const newDialogues = [];
-      const newCharactersCreated = [];
+      const doProcess = () => {
+        const lines = raw.split('\n');
+        const newDialogues = [];
+        const newCharactersCreated = [];
 
-      lines.forEach(rawLine => {
-        const line = rawLine.trim();
-        if (!line) return; // skip blank lines
+        lines.forEach(rawLine => {
+          const line = rawLine.trim();
+          if (!line) return; // skip blank lines
 
-        let matchedChar = null;
-        let text = null;
+          let matchedChar = null;
+          let text = null;
 
-        // 1) Check registered shortcuts first (longest shortcut wins if more than one matches)
-        const shortcutCandidates = state.characters
-          .filter(c => c.shortcut && c.shortcut.trim() !== '' && line.startsWith(c.shortcut))
-          .sort((a, b) => b.shortcut.length - a.shortcut.length);
+          // 1) Check registered shortcuts first (longest shortcut wins if more than one matches)
+          const shortcutCandidates = state.characters
+            .filter(c => c.shortcut && c.shortcut.trim() !== '' && line.startsWith(c.shortcut))
+            .sort((a, b) => b.shortcut.length - a.shortcut.length);
 
-        if (shortcutCandidates.length > 0) {
-          const target = shortcutCandidates[0];
-          matchedChar = target.name;
-          text = line.slice(target.shortcut.length).trim();
-        } else {
-          // 2) Check '인물명:' pattern - everything before the first ':' is the name
-          const colonIdx = line.indexOf(':');
-          if (colonIdx > 0) {
-            const namePart = line.slice(0, colonIdx).trim();
-            const textPart = line.slice(colonIdx + 1).trim();
-            if (namePart) {
-              matchedChar = namePart;
-              text = textPart;
+          if (shortcutCandidates.length > 0) {
+            const target = shortcutCandidates[0];
+            matchedChar = target.name;
+            text = line.slice(target.shortcut.length).trim();
+          } else {
+            // 2) Check '인물명:' pattern - everything before the first ':' is the name
+            const colonIdx = line.indexOf(':');
+            if (colonIdx > 0) {
+              const namePart = line.slice(0, colonIdx).trim();
+              const textPart = line.slice(colonIdx + 1).trim();
+              if (namePart) {
+                matchedChar = namePart;
+                text = textPart;
+              }
             }
           }
-        }
 
-        if (matchedChar) {
-          let charObj = state.characters.find(c => c.name === matchedChar);
-          if (!charObj) {
-            charObj = { name: matchedChar, color: pickAutoColor(), shortcut: '' };
-            state.characters.push(charObj);
-            newCharactersCreated.push(matchedChar);
+          if (matchedChar) {
+            let charObj = state.characters.find(c => c.name === matchedChar);
+            if (!charObj) {
+              charObj = { name: matchedChar, color: pickAutoColor(), shortcut: '' };
+              state.characters.push(charObj);
+              newCharactersCreated.push(matchedChar);
+            }
+            if (!text) text = line; // safety fallback, shouldn't normally trigger
+            newDialogues.push({ id: Date.now().toString() + '_' + Math.random().toString(36).slice(2, 7), char: matchedChar, text: text });
+          } else {
+            // No marker found -> narration
+            newDialogues.push({ id: Date.now().toString() + '_' + Math.random().toString(36).slice(2, 7), char: '나레이터', text: line });
           }
-          if (!text) text = line; // safety fallback, shouldn't normally trigger
-          newDialogues.push({ id: Date.now().toString() + '_' + Math.random().toString(36).slice(2, 7), char: matchedChar, text: text });
-        } else {
-          // No marker found -> narration
-          newDialogues.push({ id: Date.now().toString() + '_' + Math.random().toString(36).slice(2, 7), char: '나레이터', text: line });
+        });
+
+        if (newDialogues.length === 0) return showCustomAlert('변환할 수 있는 내용을 찾지 못했습니다.');
+
+        state.dialogues = state.dialogues.concat(newDialogues);
+        textarea.value = '';
+
+        commitHistory();
+        renderCharacterTags();
+        renderDialogueList();
+        renderCanvas();
+
+        let msg = `${newDialogues.length}개의 대사가 추가되었습니다.`;
+        if (newCharactersCreated.length > 0) {
+          msg += `\n새로 생성된 인물: ${newCharactersCreated.join(', ')}`;
         }
-      });
+        showCustomAlert(msg);
+      };
 
-      if (newDialogues.length === 0) return showCustomAlert('변환할 수 있는 내용을 찾지 못했습니다.');
-
-      state.dialogues = state.dialogues.concat(newDialogues);
-      textarea.value = '';
-
-      commitHistory();
-      renderCharacterTags();
-      renderDialogueList();
-      renderCanvas();
-
-      let msg = `${newDialogues.length}개의 대사가 추가되었습니다.`;
-      if (newCharactersCreated.length > 0) {
-        msg += `\n새로 생성된 인물: ${newCharactersCreated.join(', ')}`;
+      if (warningSettings.batchInput) {
+        const lineCount = raw.split('\n').filter(l => l.trim() !== '').length;
+        showCustomConfirm(`${lineCount}줄의 내용을 대사로 변환하여 추가하시겠습니까?`, doProcess);
+      } else {
+        doProcess();
       }
-      showCustomAlert(msg);
     }
 
     function deleteDialogue(id) {
@@ -1600,6 +1827,16 @@
 
       for (let i = 0; i < dList.length; i++) {
         const d = dList[i];
+
+        if (d.type === 'pagebreak') {
+          if (currentPageLines.length > 0) {
+            pages.push(currentPageLines);
+            currentPageLines = [];
+            currentHeight = 0;
+          }
+          continue;
+        }
+
         const isNarrative = d.char === '나레이터'; 
         
         let characterNameLines = [];
@@ -1757,7 +1994,7 @@
             footerStr = conf.pageTexts[pageIdx] || "";
           }
 
-          let fx = padL + 10;
+          let fx = padL;
           // Footer Y pos responds to the new targetHeight dynamically (or hugs the content block in center mode)
           let fyBottom = conf.centerMode ? centerFooterY : (targetHeight - (padB / 2) - 25);
           let fyTop = conf.centerMode ? centerFooterY : ((padT / 2) + 25);
@@ -1766,12 +2003,12 @@
           ctx.textAlign = 'left';
 
           switch (conf.footerPosition) {
-            case 'bottom-left':   fx = padL + 0; fy = fyBottom; break;
+            case 'bottom-left':   fx = padL; fy = fyBottom; break;
             case 'bottom-center': fx = cWidth / 2; fy = fyBottom; ctx.textAlign = 'center'; break;
-            case 'bottom-right':  fx = cWidth - padR - 0; fy = fyBottom; ctx.textAlign = 'right'; break;
-            case 'top-left':      fx = padL + 0; fy = fyTop; break;
+            case 'bottom-right':  fx = cWidth - padR; fy = fyBottom; ctx.textAlign = 'right'; break;
+            case 'top-left':      fx = padL; fy = fyTop; break;
             case 'top-center':    fx = cWidth / 2; fy = fyTop; ctx.textAlign = 'center'; break;
-            case 'top-right':     fx = cWidth - padR - 0; fy = fyTop; ctx.textAlign = 'right'; break;
+            case 'top-right':     fx = cWidth - padR; fy = fyTop; ctx.textAlign = 'right'; break;
           }
 
           if(footerStr) ctx.fillText(footerStr, fx, fy);
@@ -1977,23 +2214,38 @@
 
     function downloadAllPages() {
       if (pageCanvasList.length === 0) return showCustomAlert('저장할 이미지가 없습니다.');
-      showCustomConfirm(`전체 ${pageCanvasList.length}개의 페이지 이미지를 다운로드하시겠습니까?`, () => {
+      const doDownload = () => {
         pageCanvasList.forEach((item, idx) => setTimeout(() => downloadPage(item.canvas, item.idx), idx * 300));
-      });
+      };
+      if (warningSettings.imageSave) {
+        showCustomConfirm(`전체 ${pageCanvasList.length}개의 페이지 이미지를 다운로드하시겠습니까?`, doDownload);
+      } else {
+        doDownload();
+      }
     }
 
     // Global Reset Actions
     function confirmClearAll() {
-      showCustomConfirm("대사를 전부 삭제하시겠습니까?", () => {
+      const doClear = () => {
         state.dialogues = [];
         commitHistory();
         renderDialogueList();
         renderCanvas();
-      });
+      };
+      if (warningSettings.clearAll) {
+        showCustomConfirm("대사를 전부 삭제하시겠습니까?", doClear);
+      } else {
+        doClear();
+      }
     }
 
     function confirmReset() {
-      showCustomConfirm("스타일 설정을 기본값으로 초기화하시겠습니까?\n(인물, 대사, 저장된 템플릿은 그대로 유지됩니다)", () => {
+      const doReset = () => {
+        state.characters = [{ name: '나레이터', color: '회색', shortcut: '' }];
+        state.dialogues = [
+          { id: '1', char: '나레이터', text: '안개 낀 바닷가, 새벽. 등대의 불빛이 규칙적으로 돌아간다. 파도 소리만이 무대를 채운다.' },
+          { id: '2', char: '나레이터', text: '여자가 계단을 올라 창밖을 바라본다. 수평선 너머, 흐릿한 형체가 서서히 등장한다.' }
+        ];
         state.config = {
           width: 1080, height: 1080, fontFamily: "'Gowun Batang', serif", fontSize: 24, nameWidthRatio: 8, lineSpacing: 40,
           bgColor: '#f5f2eb', fgColor: '#2c221e', paperTexture: 'pulp', pageFooterEnabled: false, footerPosition: 'bottom-left',
@@ -2003,8 +2255,15 @@
         document.getElementById('btn-clear-bg').classList.add('hidden');
         commitHistory();
         syncConfigToUI();
+        renderCharacterTags();
+        renderDialogueList();
         renderCanvas();
-      });
+      };
+      if (warningSettings.reset) {
+        showCustomConfirm("인물, 대사, 스타일을 편집 이전 기본값으로 초기화하시겠습니까?\n(저장된 템플릿은 삭제되지 않고 유지됩니다)", doReset);
+      } else {
+        doReset();
+      }
     }
 
     // --- CUSTOM POPUP & DIALOGS ---
