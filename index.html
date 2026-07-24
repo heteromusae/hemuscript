@@ -18,6 +18,8 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" />
   
   <style>
+    @import url('https://fonts.googleapis.com/earlyaccess/nanumgothic.css');
+
     @font-face {
         font-family: 'ChosunIlboMyungjo';
         src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_one@1.0/Chosunilbo_myungjo.woff') format('woff');
@@ -34,6 +36,24 @@
         font-family: 'Paperozi';
         src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-3Light.woff2') format('woff2');
         font-weight: 300;
+        font-display: swap;
+    }
+    @font-face {
+        font-family: 'Pretendard';
+        src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-Medium.woff2') format('woff2');
+        font-weight: 500;
+        font-display: swap;
+    }
+    @font-face {
+        font-family: 'Cafe24Surround';
+        src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2105_2@1.0/Cafe24Ssurround.woff') format('woff');
+        font-weight: normal;
+        font-display: swap;
+    }
+    @font-face {
+        font-family: 'AliceDigitalLearning';
+        src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_elice@1.0/EliceDigitalBaeum.woff2') format('woff2');
+        font-weight: normal;
         font-display: swap;
     }
 
@@ -309,6 +329,10 @@
                 <option value="'ChosunIlboMyungjo', serif">조선일보 명조</option>
                 <option value="'MaruBuri', serif">마루 부리</option>
                 <option value="'Paperozi', sans-serif">페이퍼로지</option>
+                <option value="'Pretendard', sans-serif">프리텐다드</option>
+                <option value="'Cafe24Surround', sans-serif">카페24 써라운드체</option>
+                <option value="'NanumGothic', sans-serif">나눔고딕</option>
+                <option value="'AliceDigitalLearning', sans-serif">엘리스 디지털 배움체</option>
               </select>
             </div>
             <div>
@@ -425,6 +449,10 @@
               <div>
                 <label class="block text-[10px] text-gray-500 mb-1 flex justify-between"><span>불투명도</span> <span id="bg-opacity-val">50%</span></label>
                 <input type="range" id="bg-opacity" min="0" max="100" value="50" oninput="document.getElementById('bg-opacity-val').innerText = this.value + '%'; updateConfigState(); renderCanvas();" onchange="commitHistory();" class="w-full accent-[#8b7355]">
+              </div>
+              <div>
+                <label class="block text-[10px] text-gray-500 mb-1 flex justify-between"><span>블러</span> <span id="bg-blur-val">0px</span></label>
+                <input type="range" id="bg-blur" min="0" max="100" value="0" oninput="document.getElementById('bg-blur-val').innerText = this.value + 'px'; updateConfigState(); renderCanvas();" onchange="commitHistory();" class="w-full accent-[#8b7355]">
               </div>
             </div>
           </div>
@@ -710,6 +738,7 @@
         centerMode: false,
         bgImage: null,
         bgOpacity: 50,
+        bgBlur: 0,
         wrapMode: 'char',
         narratorAlign: 'left',
         characterAlign: 'left'
@@ -841,6 +870,7 @@
             if(state.config.autoCrop === undefined) state.config.autoCrop = false;
             if(state.config.centerMode === undefined) state.config.centerMode = false;
             if(state.config.bgOpacity === undefined) state.config.bgOpacity = 50;
+            if(state.config.bgBlur === undefined) state.config.bgBlur = 0;
             if(state.config.wrapMode === undefined) state.config.wrapMode = 'char';
             if(state.config.narratorAlign === undefined) state.config.narratorAlign = 'left';
             if(state.config.characterAlign === undefined) state.config.characterAlign = 'left';
@@ -999,6 +1029,8 @@
       document.getElementById('center-mode-toggle').checked = conf.centerMode;
       document.getElementById('bg-opacity').value = conf.bgOpacity;
       document.getElementById('bg-opacity-val').innerText = conf.bgOpacity + '%';
+      document.getElementById('bg-blur').value = conf.bgBlur;
+      document.getElementById('bg-blur-val').innerText = conf.bgBlur + 'px';
 
       document.getElementById('wrap-mode').value = conf.wrapMode;
       document.getElementById('narrator-align').value = conf.narratorAlign;
@@ -1034,6 +1066,7 @@
         conf.autoCrop = document.getElementById('auto-crop-toggle').checked;
         conf.centerMode = document.getElementById('center-mode-toggle').checked;
         conf.bgOpacity = parseInt(document.getElementById('bg-opacity').value) || 50;
+        conf.bgBlur = parseInt(document.getElementById('bg-blur').value) || 0;
 
         conf.wrapMode = document.getElementById('wrap-mode').value;
         conf.narratorAlign = document.getElementById('narrator-align').value;
@@ -2049,7 +2082,28 @@
           // Y is calculated to center the image vertically based on dynamic targetHeight
           const y = (targetHeight - drawH) / 2;
           
-          ctx.drawImage(loadedBgImage, x, y, drawW, drawH);
+          if (conf.bgBlur > 0) {
+            // Clip to the image's own rectangle first, so blurring can't fade the
+            // image's edges/corners into transparency and reveal the background
+            // color behind it (a canvas filter-blur quirk).
+            ctx.beginPath();
+            ctx.rect(x, y, drawW, drawH);
+            ctx.clip();
+            ctx.filter = `blur(${conf.bgBlur}px)`;
+
+            // Draw the image oversized (uniformly scaled around its own center) so
+            // the blur has real image pixels to sample near the clip edge instead
+            // of empty space, keeping the visible edge crisp/opaque like a clip.
+            const pad = conf.bgBlur * 3;
+            const scale = 1 + (pad * 2) / Math.max(1, Math.min(drawW, drawH));
+            const paddedW = drawW * scale;
+            const paddedH = drawH * scale;
+            const paddedX = x - (paddedW - drawW) / 2;
+            const paddedY = y - (paddedH - drawH) / 2;
+            ctx.drawImage(loadedBgImage, paddedX, paddedY, paddedW, paddedH);
+          } else {
+            ctx.drawImage(loadedBgImage, x, y, drawW, drawH);
+          }
           ctx.restore();
         }
 
@@ -2329,7 +2383,7 @@
         state.config = {
           width: 1080, height: 1080, fontFamily: "'Gowun Batang', serif", fontSize: 24, nameWidthRatio: 8, lineSpacing: 40,
           bgColor: '#f5f2eb', fgColor: '#2c221e', paperTexture: 'pulp', pageFooterEnabled: false, footerPosition: 'bottom-left',
-          footerMode: 'unified', footerUnifiedText: '— 헤무대본 제 1장 —', pageTexts: [], autoCrop: false, centerMode: false, bgImage: null, bgOpacity: 50,
+          footerMode: 'unified', footerUnifiedText: '— 헤무대본 제 1장 —', pageTexts: [], autoCrop: false, centerMode: false, bgImage: null, bgOpacity: 50, bgBlur: 0,
           wrapMode: 'char', narratorAlign: 'left', characterAlign: 'left'
         };
         document.getElementById('btn-clear-bg').classList.add('hidden');
