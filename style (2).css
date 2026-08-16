@@ -1,0 +1,110 @@
+    @import url('https://fonts.googleapis.com/earlyaccess/nanumgothic.css');
+
+    @font-face {
+        font-family: 'ChosunIlboMyungjo';
+        src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_one@1.0/Chosunilbo_myungjo.woff') format('woff');
+        font-weight: normal;
+        font-display: swap;
+    }
+    @font-face {
+        font-family: 'MaruBuri';
+        src: url(https://hangeul.pstatic.net/hangeul_static/webfont/MaruBuri/MaruBuri-Light.woff2) format('woff2');
+        font-weight: 300;
+        font-display: swap;
+    }
+    @font-face {
+        font-family: 'Paperozi';
+        src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-3Light.woff2') format('woff2');
+        font-weight: 300;
+        font-display: swap;
+    }
+    @font-face {
+        font-family: 'Pretendard';
+        src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-Medium.woff2') format('woff2');
+        font-weight: 500;
+        font-display: swap;
+    }
+    @font-face {
+        font-family: 'Cafe24Surround';
+        src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2105_2@1.0/Cafe24Ssurround.woff') format('woff');
+        font-weight: normal;
+        font-display: swap;
+    }
+    @font-face {
+        font-family: 'AliceDigitalLearning';
+        src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_elice@1.0/EliceDigitalBaeum.woff2') format('woff2');
+        font-weight: normal;
+        font-display: swap;
+    }
+
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background-color: #f4eae1;
+      color: #3e332a;
+    }
+    .retro-panel {
+      background-color: #fbf7f2;
+      border: 2px solid #d4c5b9;
+      box-shadow: 4px 4px 0px #d4c5b9;
+    }
+    .retro-btn {
+      background-color: #e8ded4;
+      border: 2px solid #8b7355;
+      color: #5c4a37;
+      transition: all 0.1s ease;
+    }
+    .retro-btn:active:not(:disabled) {
+      transform: translate(2px, 2px);
+      box-shadow: none !important;
+    }
+    .retro-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .retro-btn-accent {
+      background-color: #8b7355;
+      border: 2px solid #5c4a37;
+      color: #ffffff;
+    }
+    .retro-btn-danger {
+      background-color: #e5989b;
+      border: 2px solid #b56576;
+      color: #3c0919;
+    }
+    .retro-input {
+      background-color: #fdfcfb;
+      border: 2px solid #d4c5b9;
+      color: #5c4a37;
+    }
+    .retro-input:focus {
+      outline: none;
+      border-color: #8b7355;
+    }
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #f4eae1; }
+    ::-webkit-scrollbar-thumb { background: #d4c5b9; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #8b7355; }
+    
+    /* Pickr custom adjustments */
+    .pickr .pcr-button {
+      border: 1px solid #d4c5b9;
+      border-radius: 4px;
+      width: 2rem;
+      height: 2rem;
+    }
+
+    /* Accordion Toggle Icon transition */
+    .panel-open { transform: rotate(180deg); }
+
+    /* Cropper Container Limit */
+    .img-container {
+      max-height: 50vh;
+      width: 100%;
+      background-color: #e8ded4;
+    }
+    .img-container img {
+      display: block;
+      max-width: 100%;
+    }
+  

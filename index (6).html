@@ -1,0 +1,760 @@
+ <!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>헤무대본</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome for Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts & Custom Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@300;400;500;700&family=Nanum+Myeongjo:wght@400;700;800&display=swap" rel="stylesheet">
+  <!-- Pickr CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/themes/classic.min.css"/>
+  <!-- Cropper.js CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" />
+  
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="p-4 md:p-8 min-h-screen flex flex-col justify-between">
+
+  <!-- Header -->
+  <header class="max-w-7xl mx-auto w-full mb-6">
+    <div class="retro-panel p-4 flex flex-col sm:flex-row justify-between items-center gap-4 rounded-lg">
+      <div class="flex items-center gap-3">
+        <i class="fa-solid fa-film text-3xl text-[#8b7355]"></i>
+        <div>
+          <h1 class="text-xl md:text-2xl font-bold tracking-tight font-serif text-[#5c4a37]">헤무대본</h1>
+        </div>
+      </div>
+      <div class="flex gap-1.5 flex-wrap justify-end items-center">
+        <!-- Warning Popups Management -->
+        <button onclick="openWarningsModal()" class="retro-btn text-[11px] px-2 py-1 rounded font-semibold flex items-center gap-1" title="경고 팝업 관리">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+
+        <!-- Undo/Redo Buttons -->
+        <button onclick="undo()" id="btn-undo" class="retro-btn text-[11px] px-2 py-1 rounded font-semibold flex items-center gap-1" title="실행 취소">
+          <i class="fa-solid fa-rotate-left"></i>
+        </button>
+        <button onclick="redo()" id="btn-redo" class="retro-btn text-[11px] px-2 py-1 rounded font-semibold flex items-center gap-1 mr-1" title="다시 실행">
+          <i class="fa-solid fa-rotate-right"></i>
+        </button>
+
+        <button onclick="confirmReset()" class="retro-btn text-[11px] px-2 py-1 rounded font-semibold retro-btn-danger flex items-center gap-1">
+          <i class="fa-solid fa-arrow-rotate-left"></i> 전체 초기화
+        </button>
+        <button onclick="confirmClearAll()" class="retro-btn text-[11px] px-2 py-1 rounded font-semibold bg-red-100 border-red-400 text-red-700 flex items-center gap-1">
+          <i class="fa-solid fa-trash-can"></i> 대사 전체삭제
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Grid Area -->
+  <main class="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow">
+    
+    <!-- Controls Sidebar (Left) -->
+    <section class="lg:col-span-5 flex flex-col gap-6">
+      
+      <!-- Character List Management -->
+      <div class="retro-panel p-5 rounded-lg flex flex-col gap-3">
+        <div class="flex justify-between items-center border-b border-[#e8ded4] pb-2">
+          <h2 class="font-bold text-base flex items-center gap-2"><i class="fa-solid fa-users text-[#8b7355]"></i> 인물 추가</h2>
+        </div>
+        
+        <div class="flex gap-2">
+          <select id="new-char-color" class="retro-input px-2 py-2 text-xs rounded w-24">
+            <option value="빨강">빨강</option>
+            <option value="주황">주황</option>
+            <option value="노랑">노랑</option>
+            <option value="초록">초록</option>
+            <option value="하늘">하늘</option>
+            <option value="파랑">파랑</option>
+            <option value="보라">보라</option>
+            <option value="분홍">분홍</option>
+            <option value="하양">하양</option>
+            <option value="회색" selected>회색</option>
+            <option value="검정">검정</option>
+          </select>
+          <input type="text" id="new-char-name" placeholder="인물 이름 입력" class="retro-input px-3 py-2 text-sm rounded w-full">
+          <button onclick="addCharacter()" class="retro-btn px-4 py-2 text-sm rounded font-semibold retro-btn-accent whitespace-nowrap">추가</button>
+        </div>
+
+        <div class="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-1" id="character-tags-container">
+          <!-- Dynamically filled -->
+        </div>
+      </div>
+
+      <!-- Add Dialog Input (Toggleable) -->
+      <div class="retro-panel p-5 rounded-lg flex flex-col gap-2">
+
+        <h2 class="font-bold text-base flex justify-between items-center w-full cursor-pointer select-none" onclick="toggleDialogInputPanel()">
+          <span class="flex items-center gap-2"><i class="fa-solid fa-comment-dots text-[#8b7355]"></i> 대사 입력</span>
+          <i id="dialog-input-panel-icon" class="fa-solid fa-chevron-down text-gray-500 text-sm transition-transform panel-open"></i>
+        </h2>
+
+        <!-- Accordion Content -->
+        <div id="dialog-input-panel-content" class="flex flex-col gap-3 mt-1 pt-2 border-t border-[#e8ded4]">
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">인물 선택</label>
+            <select id="char-select" class="retro-input px-3 py-2 text-sm rounded w-full">
+              <!-- Dynamic character options -->
+            </select>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="block text-xs font-semibold text-gray-600">내용</label>
+              <button type="button" onclick="openExpandTextarea('dialog-text','대사 내용 편집')" class="text-gray-400 hover:text-[#8b7355] transition-colors px-1" title="크게 보기">
+                <i class="fa-solid fa-expand"></i>
+              </button>
+            </div>
+            <textarea id="dialog-text" rows="3" placeholder="내용을 입력하세요." class="retro-input px-3 py-2 text-sm rounded w-full resize-none"></textarea>
+          </div>
+
+          <button onclick="addDialog()" class="retro-btn px-4 py-2 text-sm rounded font-bold retro-btn-accent flex items-center justify-center gap-2">
+            <i class="fa-solid fa-plus"></i> 대사 추가
+          </button>
+        </div>
+      </div>
+
+      <!-- Batch Dialog Input (Toggleable) -->
+      <div class="retro-panel p-5 rounded-lg flex flex-col gap-2">
+
+        <h2 class="font-bold text-base flex justify-between items-center w-full cursor-pointer select-none" onclick="toggleBatchPanel()">
+          <span class="flex items-center gap-2"><i class="fa-solid fa-layer-group text-[#8b7355]"></i> 일괄 입력</span>
+          <i id="batch-panel-icon" class="fa-solid fa-chevron-down text-gray-500 text-sm transition-transform"></i>
+        </h2>
+
+        <!-- Accordion Content -->
+        <div id="batch-panel-content" class="hidden flex-col gap-3 mt-1 pt-2 border-t border-[#e8ded4]">
+          <p class="text-[11px] text-gray-500 leading-relaxed">
+            줄바꿈을 기준으로 구분됩니다.<br>줄 앞에 아무 표시가 없으면 <b>나레이션</b>으로, <code class="bg-[#e8ded4] px-1 rounded">인물명:</code> 형식으로 시작하면 해당 인물의 대사로 처리됩니다. (등록되지 않은 인물일 시 자동 등록)<br>아래 등록된 <b>단축어</b>로 줄을 시작해도 해당 인물의 대사로 처리됩니다.
+          </p>
+
+          <!-- Shortcut Management -->
+          <div id="shortcut-section-wrapper">
+            <div class="flex items-center justify-between gap-2 mb-1">
+              <label class="block text-xs font-semibold text-gray-600">인물별 단축어 설정 <span class="font-normal text-gray-400">(이름 클릭 시 입력창에 삽입)</span></label>
+              <button type="button" onclick="toggleBatchEditTools()" id="shortcut-section-pen-btn" class="hidden text-gray-400 hover:text-[#8b7355] transition-colors px-1 shrink-0" title="텍스트 정리 도구">
+                <i class="fa-solid fa-pen"></i>
+              </button>
+            </div>
+            <div id="shortcut-list-container" class="flex flex-col gap-1.5 max-h-32 overflow-y-auto p-1.5 bg-[#fdfcfb] border border-[#d4c5b9] rounded">
+              <!-- Dynamically filled -->
+            </div>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="block text-xs font-semibold text-gray-600">내용</label>
+              <div class="flex items-center gap-1">
+                <button type="button" onclick="toggleBatchEditTools()" id="batch-edit-tools-toggle" class="text-gray-400 hover:text-[#8b7355] transition-colors px-1" title="텍스트 정리 도구">
+                  <i class="fa-solid fa-pen"></i>
+                </button>
+                <button type="button" onclick="openExpandTextarea('batch-input-text','일괄 입력 내용 편집')" class="text-gray-400 hover:text-[#8b7355] transition-colors px-1" title="크게 보기">
+                  <i class="fa-solid fa-expand"></i>
+                </button>
+              </div>
+            </div>
+
+            <div id="batch-edit-tools" class="hidden flex-col gap-1.5 mb-2 p-2 bg-[#fdfcfb] border border-[#d4c5b9] rounded">
+              <div class="flex flex-wrap gap-1.5">
+                <button type="button" onclick="batchStripMarkers()" class="retro-btn text-[10px] px-2 py-1 rounded">별표・따옴표 제거</button>
+                <button type="button" onclick="batchStripHtmlTags()" class="retro-btn text-[10px] px-2 py-1 rounded">스타일 태그 제거</button>
+                <button type="button" onclick="toggleBatchReplaceFields()" class="retro-btn text-[10px] px-2 py-1 rounded">텍스트 치환</button>
+              </div>
+              <div id="batch-replace-fields" class="hidden flex-wrap gap-1.5 items-center">
+                <input type="text" id="batch-replace-find" placeholder="찾을 텍스트" class="retro-input px-2 py-1 text-[11px] rounded flex-1 min-w-[80px]">
+                <i class="fa-solid fa-arrow-right text-gray-400 text-[10px]"></i>
+                <input type="text" id="batch-replace-with" placeholder="바꿀 텍스트" class="retro-input px-2 py-1 text-[11px] rounded flex-1 min-w-[80px]">
+                <button type="button" onclick="applyBatchReplace()" class="retro-btn text-[10px] px-2 py-1 rounded retro-btn-accent">적용</button>
+              </div>
+            </div>
+
+            <textarea id="batch-input-text" rows="6" placeholder="예)&#10;무언가의 나레이션…&#10;헤무: 안녕하세요&#10;🍀행복한 하루 보내시길 바라요" class="retro-input px-3 py-2 text-sm rounded w-full resize-none"></textarea>
+          </div>
+
+          <button onclick="processBatchInput()" class="retro-btn px-4 py-2 text-sm rounded font-bold retro-btn-accent flex items-center justify-center gap-2">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> 변환하여 추가
+          </button>
+        </div>
+      </div>
+
+      <!-- Text/Font Settings (Accordion) -->
+      <div class="retro-panel p-5 rounded-lg flex flex-col gap-2">
+        
+        <h2 class="font-bold text-base flex justify-between items-center w-full cursor-pointer select-none" onclick="toggleStylePanel()">
+          <span class="flex items-center gap-2"><i class="fa-solid fa-sliders text-[#8b7355]"></i> 스타일 설정</span>
+          <i id="style-panel-icon" class="fa-solid fa-chevron-down text-gray-500 text-sm transition-transform panel-open"></i>
+        </h2>
+        
+        <!-- Accordion Content -->
+        <div id="style-panel-content" class="flex flex-col gap-4 mt-1 pt-2 border-t border-[#e8ded4]">
+          <!-- Canvas Dimensions & Ratio Presets -->
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1.5 flex justify-between items-center flex-wrap gap-y-1.5">
+              <span>캔버스 이미지 크기 & 비율</span>
+              <span class="flex items-center gap-3">
+                <label class="flex items-center gap-1 cursor-pointer" title="여백 자동 크롭과 함께 사용할 수 없어요">
+                  <input type="checkbox" id="center-mode-toggle" onchange="handleCenterModeToggle()" class="accent-[#8b7355]">
+                  <span class="text-[10px] font-bold text-[#8b7355]">중앙부터 입력</span>
+                </label>
+                <label class="flex items-center gap-1 cursor-pointer" title="중앙부터 입력과 함께 사용할 수 없어요">
+                  <input type="checkbox" id="auto-crop-toggle" onchange="handleAutoCropToggle()" class="accent-[#8b7355]">
+                  <span class="text-[10px] font-bold text-[#8b7355]">여백 자동 크롭</span>
+                </label>
+              </span>
+            </label>
+            <div class="grid grid-cols-4 gap-1.5 mb-2">
+              <button onclick="setPresetRatio(1080, 1080)" class="retro-btn text-[10px] py-1 rounded">1:1</button>
+              <button onclick="setPresetRatio(1080, 1440)" class="retro-btn text-[10px] py-1 rounded">3:4</button>
+              <button onclick="setPresetRatio(1080, 1920)" class="retro-btn text-[10px] py-1 rounded">9:16</button>
+              <button onclick="setPresetRatio(1200, 630)" class="retro-btn text-[10px] py-1 rounded">1.91:1</button>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <span class="text-[10px] text-gray-500">너비 (px)</span>
+                <input type="number" id="canvas-width" value="1080" step="10" oninput="updateConfigState(); renderCanvas();" onchange="commitHistory();" class="retro-input px-2 py-1 text-xs rounded w-full">
+              </div>
+              <div>
+                <span class="text-[10px] text-gray-500">높이 (px)</span>
+                <input type="number" id="canvas-height" value="1080" step="10" oninput="updateConfigState(); renderCanvas();" onchange="commitHistory();" class="retro-input px-2 py-1 text-xs rounded w-full">
+              </div>
+            </div>
+          </div>
+
+          <!-- Fonts & Text Styles -->
+          <div class="grid grid-cols-2 gap-3 border-t border-[#e8ded4] pt-3">
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1">서체 설정</label>
+              <select id="font-family" onchange="updateConfigState(); commitHistory(); renderCanvas();" class="retro-input px-2 py-1.5 text-xs rounded w-full">
+                <option value="'Gowun Batang', serif">고운 바탕체</option>
+                <option value="'Nanum Myeongjo', serif">나눔 명조체</option>
+                <option value="'Noto Sans KR', sans-serif">고딕 본문체</option>
+                <option value="'ChosunIlboMyungjo', serif">조선일보 명조</option>
+                <option value="'MaruBuri', serif">마루 부리</option>
+                <option value="'Paperozi', sans-serif">페이퍼로지</option>
+                <option value="'Pretendard', sans-serif">프리텐다드</option>
+                <option value="'Cafe24Surround', sans-serif">카페24 써라운드체</option>
+                <option value="'NanumGothic', sans-serif">나눔고딕</option>
+                <option value="'AliceDigitalLearning', sans-serif">엘리스 디지털 배움체</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1 flex justify-between"><span>서체 크기</span> <span id="font-size-val">24px</span></label>
+              <input type="range" id="font-size" min="14" max="42" value="24" oninput="document.getElementById('font-size-val').innerText = this.value + 'px'; updateConfigState(); renderCanvas();" onchange="commitHistory();" class="w-full accent-[#8b7355] mt-1">
+            </div>
+          </div>
+
+          <!-- Wrap Mode & Dialogue Format -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1">줄바꿈 단위</label>
+              <select id="wrap-mode" onchange="updateConfigState(); commitHistory(); renderCanvas();" class="retro-input px-2 py-1.5 text-xs rounded w-full">
+                <option value="char">글자 단위</option>
+                <option value="word">단어 단위</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1">대사 형식</label>
+              <select id="dialogue-format" onchange="updateConfigState(); commitHistory(); renderCanvas();" class="retro-input px-2 py-1.5 text-xs rounded w-full">
+                <option value="plain">기본형 (대사만)</option>
+                <option value="chat">채팅형 (말풍선)</option>
+              </select>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1">나레이터 정렬</label>
+              <select id="narrator-align" onchange="updateConfigState(); commitHistory(); renderCanvas();" class="retro-input px-2 py-1.5 text-xs rounded w-full">
+                <option value="left">왼쪽 정렬</option>
+                <option value="center">가운데 정렬</option>
+                <option value="right">오른쪽 정렬</option>
+                <option value="justify">양끝 정렬</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1">대사 정렬</label>
+              <select id="character-align" onchange="updateConfigState(); commitHistory(); renderCanvas();" class="retro-input px-2 py-1.5 text-xs rounded w-full">
+                <option value="left">왼쪽 정렬</option>
+                <option value="center">가운데 정렬</option>
+                <option value="right">오른쪽 정렬</option>
+                <option value="justify">양끝 정렬</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Alignment / Spacers -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1 flex justify-between"><span>이름 간격</span> <span id="name-width-val">8%</span></label>
+              <input type="range" id="name-width-ratio" min="4" max="20" value="8" oninput="document.getElementById('name-width-val').innerText = this.value + '%'; updateConfigState(); renderCanvas();" onchange="commitHistory();" class="w-full accent-[#8b7355] mt-1">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1 flex justify-between"><span>대사 간격</span> <span id="line-spacing-val">40px</span></label>
+              <input type="range" id="line-spacing" min="10" max="80" value="40" oninput="document.getElementById('line-spacing-val').innerText = this.value + 'px'; updateConfigState(); renderCanvas();" onchange="commitHistory();" class="w-full accent-[#8b7355] mt-1">
+            </div>
+          </div>
+
+          <!-- Pickr Colors & Preset Templates -->
+          <div class="border-t border-[#e8ded4] pt-3">
+            <label class="block text-xs font-semibold text-gray-600 mb-1">디자인 컬러 프리셋</label>
+            <div class="grid grid-cols-3 gap-1.5 mb-3">
+              <button onclick="applyColorTemplate('#f5f2eb', '#2c221e')" class="retro-btn text-[10px] py-1 rounded">빈티지 극본 (Light)</button>
+              <button onclick="applyColorTemplate('#2b2622', '#e9dfd3')" class="retro-btn text-[10px] py-1 rounded">빈티지 극본 (Dark)</button>
+              <button onclick="applyColorTemplate('#eae2d5', '#5a463c')" class="retro-btn text-[10px] py-1 rounded">빈티지 극본</button>
+              <button onclick="applyColorTemplate('#1a202c', '#e2e8f0')" class="retro-btn text-[10px] py-1 rounded">밤하늘</button>
+              <button onclick="applyColorTemplate('#e0e0e0', '#333333')" class="retro-btn text-[10px] py-1 rounded">신문</button>
+              <button onclick="applyColorTemplate('#ffffff', '#111111')" class="retro-btn text-[10px] py-1 rounded">모노</button>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-3 bg-[#fdfcfb] p-3 rounded border border-[#d4c5b9]">
+              <div>
+                <label class="block text-[10px] text-gray-500 mb-1">배경색</label>
+                <div class="flex items-center gap-2">
+                  <div id="bg-pickr"></div>
+                  <input type="text" id="bg-color-text" value="#f5f2eb" placeholder="#Hex" oninput="syncColorInput('bg', this.value)" class="retro-input w-20 text-xs px-1 py-1 rounded text-center uppercase">
+                </div>
+              </div>
+              <div>
+                <label class="block text-[10px] text-gray-500 mb-1">글씨색</label>
+                <div class="flex items-center gap-2">
+                  <div id="fg-pickr"></div>
+                  <input type="text" id="fg-color-text" value="#2c221e" placeholder="#Hex" oninput="syncColorInput('fg', this.value)" class="retro-input w-20 text-xs px-1 py-1 rounded text-center uppercase">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Paper Texture Options -->
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-2">종이 질감</label>
+            <div class="grid grid-cols-4 gap-1.5 text-center">
+              <label class="cursor-pointer border-2 rounded p-1.5 flex flex-col items-center gap-1 bg-white hover:bg-gray-50" id="tex-lbl-none">
+                <input type="radio" name="paper-texture" value="none" checked onchange="updateConfigState(); commitHistory(); renderCanvas();" class="sr-only">
+                <span class="text-xs">없음</span>
+              </label>
+              <label class="cursor-pointer border-2 rounded p-1.5 flex flex-col items-center gap-1 bg-white hover:bg-gray-50" id="tex-lbl-pulp">
+                <input type="radio" name="paper-texture" value="pulp" onchange="updateConfigState(); commitHistory(); renderCanvas();" class="sr-only">
+                <span class="text-xs">펄프</span>
+              </label>
+              <label class="cursor-pointer border-2 rounded p-1.5 flex flex-col items-center gap-1 bg-white hover:bg-gray-50" id="tex-lbl-grid">
+                <input type="radio" name="paper-texture" value="grid" onchange="updateConfigState(); commitHistory(); renderCanvas();" class="sr-only">
+                <span class="text-xs">격자</span>
+              </label>
+              <label class="cursor-pointer border-2 rounded p-1.5 flex flex-col items-center gap-1 bg-white hover:bg-gray-50" id="tex-lbl-noise">
+                <input type="radio" name="paper-texture" value="noise" onchange="updateConfigState(); commitHistory(); renderCanvas();" class="sr-only">
+                <span class="text-xs">노이즈</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Custom Background Image Options -->
+          <div class="border-t border-[#e8ded4] pt-3">
+            <label class="block text-xs font-bold text-gray-600 mb-1">사용자 배경 이미지 추가</label>
+            <div class="flex flex-col gap-2">
+              <div class="flex gap-2 items-center">
+                <input type="file" id="bg-image-upload" accept="image/*" onchange="handleImageUpload(event)" class="retro-input px-2 py-1 text-[11px] rounded w-full">
+                <button onclick="clearBgImage()" class="retro-btn px-2 py-1 text-[11px] rounded text-red-600 whitespace-nowrap hidden" id="btn-clear-bg">제거</button>
+              </div>
+              <div>
+                <label class="block text-[10px] text-gray-500 mb-1 flex justify-between"><span>불투명도</span> <span id="bg-opacity-val">50%</span></label>
+                <input type="range" id="bg-opacity" min="0" max="100" value="50" oninput="document.getElementById('bg-opacity-val').innerText = this.value + '%'; updateConfigState(); renderCanvas();" onchange="commitHistory();" class="w-full accent-[#8b7355]">
+              </div>
+              <div>
+                <label class="block text-[10px] text-gray-500 mb-1 flex justify-between"><span>블러</span> <span id="bg-blur-val">0px</span></label>
+                <input type="range" id="bg-blur" min="0" max="100" value="0" oninput="document.getElementById('bg-blur-val').innerText = this.value + 'px'; updateConfigState(); renderCanvas();" onchange="commitHistory();" class="w-full accent-[#8b7355]">
+              </div>
+            </div>
+          </div>
+
+          <!-- Page Text Options -->
+          <div class="border-t border-[#e8ded4] pt-3">
+            <div class="flex justify-between items-center mb-2">
+              <label class="text-xs font-bold text-gray-600">상단/하단 문구 삽입</label>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="page-footer-toggle" onchange="updateConfigState(); commitHistory(); renderCanvas();" class="sr-only peer">
+                <div class="w-9 h-5 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#8b7355]"></div>
+              </label>
+            </div>
+
+            <div id="footer-details-area" class="flex flex-col gap-2">
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <span class="text-[10px] text-gray-500">문구 위치</span>
+                  <select id="footer-position" onchange="updateConfigState(); commitHistory(); renderCanvas();" class="retro-input px-2 py-1 text-xs rounded w-full">
+                    <option value="bottom-left">좌측 하단</option>
+                    <option value="bottom-center">중앙 하단</option>
+                    <option value="bottom-right" selected>우측 하단</option>
+                    <option value="top-left">좌측 상단</option>
+                    <option value="top-center">중앙 상단</option>
+                    <option value="top-right">우측 상단</option>
+                  </select>
+                </div>
+                <div>
+                  <span class="text-[10px] text-gray-500">작성 모드</span>
+                  <select id="footer-mode" onchange="toggleFooterMode(); updateConfigState(); commitHistory(); renderCanvas();" class="retro-input px-2 py-1 text-xs rounded w-full">
+                    <option value="unified">모든 장 일괄 문구</option>
+                    <option value="split">페이지별 직접 문구</option>
+                  </select>
+                </div>
+              </div>
+
+              <div id="footer-unified-input-wrapper">
+                <span class="text-[10px] text-gray-500">공통 문구 입력</span>
+                <input type="text" id="footer-unified-text" value="— 헤무대본 제 1장 —" oninput="updateConfigState(); renderCanvas(true);" onchange="commitHistory();" class="retro-input px-2 py-1 text-xs rounded w-full">
+              </div>
+
+              <div id="footer-split-input-wrapper" class="hidden flex-col gap-2 p-2 bg-[#fdfcfb] border border-[#d4c5b9] rounded max-h-40 overflow-y-auto">
+                <p class="text-[10px] text-gray-400 text-center">페이지가 렌더링되면 장별 입력란이 생성됩니다.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Custom User Templates -->
+          <div class="border-t border-[#e8ded4] pt-3 mt-1">
+            <div class="flex justify-between items-center mb-2 flex-wrap gap-y-2">
+              <div>
+                <label class="text-xs font-bold text-gray-600 block">내 템플릿 관리</label>
+                <span class="text-[10px] text-gray-500">인물 목록 및 대본 스타일 저장</span>
+              </div>
+              <div class="flex gap-1.5">
+                <input type="file" id="template-file-input" accept=".json,application/json" onchange="handleTemplateFileImport(event)" class="hidden">
+                <button onclick="document.getElementById('template-file-input').click()" class="retro-btn text-xs font-bold px-3 py-1.5 rounded shadow-sm" title="파일에서 템플릿 불러오기">
+                  <i class="fa-solid fa-folder-open mr-1"></i> 파일 불러오기
+                </button>
+                <button onclick="openTemplateModal()" class="retro-btn text-xs font-bold px-3 py-1.5 rounded retro-btn-accent shadow-sm">
+                  <i class="fa-solid fa-floppy-disk mr-1"></i> 현재 상태 저장
+                </button>
+              </div>
+            </div>
+            <div id="user-templates-container" class="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto bg-[#fdfcfb] p-2 border border-[#d4c5b9] rounded">
+              <!-- Dynamically populated templates -->
+            </div>
+          </div>
+
+        </div> <!-- End of Accordion Content -->
+      </div>
+    </section>
+
+    <!-- Work Bench & Canvas Panel (Right) -->
+    <section class="lg:col-span-7 flex flex-col gap-6">
+      
+      <!-- Dialogue List & Re-ordering/Editing -->
+      <div class="retro-panel p-5 rounded-lg flex flex-col gap-3">
+        <div class="flex justify-between items-center border-b border-[#e8ded4] pb-2 flex-wrap gap-y-1.5">
+          <h2 class="font-bold text-base flex items-center gap-2">
+            <i class="fa-solid fa-list-check text-[#8b7355]"></i> 내용 수정 및 순서 변경
+          </h2>
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] text-gray-500 hidden sm:inline">드래그로 순서 변경 · 선택 후 페이지 분할 삽입 위치 지정</span>
+            <button onclick="addPageBreak()" class="retro-btn text-[10px] px-2 py-1 rounded flex items-center gap-1">
+              <i class="fa-solid fa-scissors"></i>
+            </button>
+            <button onclick="openExpandListModal()" class="retro-btn text-[10px] px-2 py-1 rounded flex items-center gap-1" title="크게 보기">
+              <i class="fa-solid fa-expand"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="max-h-64 overflow-y-auto border border-[#e8ded4] rounded p-2 bg-[#fdfcfb] flex flex-col gap-2" id="dialogue-list">
+          <!-- Dynamically filled with dialogue blocks -->
+        </div>
+      </div>
+
+      <!-- Realtime Multi-page Canvas Preview Area -->
+      <div class="retro-panel p-5 rounded-lg flex flex-col gap-4">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-[#e8ded4] pb-2">
+          <div>
+            <h2 class="font-bold text-base flex items-center gap-2">
+              <i class="fa-solid fa-file-image text-[#8b7355]"></i> 최종 이미지
+            </h2>
+            <p class="text-[11px] text-gray-500">높이를 벗어난 문장은 자동으로 다음 장으로 넘어갑니다.</p>
+          </div>
+          
+          <div class="flex items-center gap-2 self-stretch sm:self-auto">
+            <button onclick="renderCanvas();" class="retro-btn text-xs px-2.5 py-1.5 rounded bg-amber-50">
+              <i class="fa-solid fa-arrows-rotate"></i> 새로고침
+            </button>
+            <button onclick="downloadAllPages()" class="retro-btn text-xs px-4 py-1.5 rounded font-bold retro-btn-accent flex-grow sm:flex-grow-0 flex items-center justify-center gap-1 shadow-sm">
+              <i class="fa-solid fa-download"></i> 전체 저장
+            </button>
+          </div>
+        </div>
+
+        <!-- Canvas Container -->
+        <div class="flex flex-col items-center gap-4 bg-[#e8ded4] p-4 rounded border-2 border-[#d4c5b9] max-h-[700px] overflow-y-auto" id="canvas-preview-container">
+          <!-- Rendered canvas elements will go here -->
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- Background Image Crop Modal -->
+  <div id="crop-modal" class="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center hidden p-4">
+    <div class="retro-panel p-4 rounded-lg w-full max-w-2xl flex flex-col gap-4">
+      <h3 class="font-bold text-lg text-[#5c4a37] border-b border-[#e8ded4] pb-2 flex items-center gap-2">
+        <i class="fa-solid fa-crop-simple"></i> 배경 이미지 편집
+      </h3>
+      <p class="text-xs text-gray-500">선택한 이미지를 현재 캔버스 비율에 맞게 잘라냅니다.</p>
+      
+      <div class="img-container rounded overflow-hidden relative">
+        <img id="crop-image" src="" alt="Picture">
+      </div>
+      
+      <div class="flex justify-end gap-2 mt-2">
+        <button onclick="closeCropModal()" class="retro-btn px-4 py-2 text-sm rounded">취소</button>
+        <button onclick="applyCrop()" class="retro-btn px-6 py-2 text-sm rounded font-bold retro-btn-accent">적용하기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Dialog Modal -->
+  <div id="edit-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
+    <div class="retro-panel p-6 rounded-lg w-full max-w-lg flex flex-col gap-4">
+      <h3 class="font-bold text-lg text-[#5c4a37] border-b border-[#e8ded4] pb-2 flex items-center gap-2">
+        <i class="fa-solid fa-pen-to-square"></i> 대사 내용 수정
+      </h3>
+      <div>
+        <label class="block text-xs font-semibold text-gray-600 mb-1">화자 선택</label>
+        <select id="modal-char-select" class="retro-input px-3 py-2 text-sm rounded w-full"></select>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-gray-600 mb-1">대사 내용</label>
+        <textarea id="modal-dialog-text" rows="4" class="retro-input px-3 py-2 text-sm rounded w-full resize-none"></textarea>
+      </div>
+      <div class="flex justify-end gap-2">
+        <button onclick="closeEditModal()" class="retro-btn px-4 py-2 text-sm rounded">취소</button>
+        <button onclick="saveEditModal()" class="retro-btn px-4 py-2 text-sm rounded font-bold retro-btn-accent">저장하기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Character Profile Settings Modal (chat bubble appearance) -->
+  <div id="char-profile-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
+    <div class="retro-panel p-6 rounded-lg w-full max-w-sm flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
+      <h3 class="font-bold text-lg text-[#5c4a37] border-b border-[#e8ded4] pb-2 flex items-center gap-2">
+        <i class="fa-solid fa-id-card"></i> <span id="char-profile-modal-title">인물 프로필 설정</span>
+      </h3>
+
+      <!-- Profile Picture -->
+      <div>
+        <div class="flex justify-between items-center mb-1.5">
+          <label class="text-xs font-bold text-gray-600">프로필 사진</label>
+          <label class="relative inline-flex items-center cursor-pointer" title="채팅형 대사에 프로필 사진 표시">
+            <input type="checkbox" id="char-profile-image-toggle" onchange="handleCharProfileImageToggle()" class="sr-only peer">
+            <div class="w-9 h-5 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#8b7355]"></div>
+          </label>
+        </div>
+        <div id="char-profile-image-area" class="flex items-center gap-3">
+          <div id="char-profile-image-preview" class="w-14 h-14 rounded-full bg-[#e8ded4] border-2 border-[#d4c5b9] flex items-center justify-center overflow-hidden shrink-0">
+            <i class="fa-solid fa-user text-[#a89786] text-xl"></i>
+          </div>
+          <div class="flex flex-col gap-1.5 flex-grow">
+            <input type="file" id="char-profile-image-upload" accept="image/*" onchange="handleCharProfileImageUpload(event)" class="retro-input px-2 py-1 text-[11px] rounded w-full">
+            <button type="button" onclick="clearCharProfileImage()" id="char-profile-image-clear-btn" class="retro-btn text-[10px] px-2 py-1 rounded text-red-600 self-start hidden">사진 제거</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Alignment -->
+      <div class="border-t border-[#e8ded4] pt-3">
+        <label class="block text-xs font-bold text-gray-600 mb-1.5">말풍선 정렬 (채팅형)</label>
+        <div class="grid grid-cols-2 gap-1.5">
+          <label class="cursor-pointer border-2 rounded p-2 flex items-center justify-center gap-1.5 bg-white hover:bg-gray-50" id="char-align-lbl-left">
+            <input type="radio" name="char-profile-align" value="left" class="sr-only" onchange="updateCharProfileAlignLabels()">
+            <i class="fa-solid fa-align-left"></i><span class="text-xs">왼쪽</span>
+          </label>
+          <label class="cursor-pointer border-2 rounded p-2 flex items-center justify-center gap-1.5 bg-white hover:bg-gray-50" id="char-align-lbl-right">
+            <input type="radio" name="char-profile-align" value="right" class="sr-only" onchange="updateCharProfileAlignLabels()">
+            <i class="fa-solid fa-align-right"></i><span class="text-xs">오른쪽</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Colors -->
+      <div class="border-t border-[#e8ded4] pt-3">
+        <label class="block text-xs font-bold text-gray-600 mb-2">색상 설정 (채팅형)</label>
+        <div class="grid grid-cols-1 gap-2.5 bg-[#fdfcfb] p-3 rounded border border-[#d4c5b9]">
+          <div class="flex items-center justify-between gap-2">
+            <label class="text-[11px] text-gray-500 whitespace-nowrap">말풍선 색</label>
+            <div class="flex items-center gap-2">
+              <div id="char-bubble-pickr"></div>
+              <input type="text" id="char-bubble-color-text" placeholder="#Hex" oninput="syncCharProfileColorInput('bubble', this.value)" class="retro-input w-20 text-xs px-1 py-1 rounded text-center uppercase">
+            </div>
+          </div>
+          <div class="flex items-center justify-between gap-2">
+            <label class="text-[11px] text-gray-500 whitespace-nowrap">대사 글자색</label>
+            <div class="flex items-center gap-2">
+              <div id="char-text-pickr"></div>
+              <input type="text" id="char-text-color-text" placeholder="#Hex" oninput="syncCharProfileColorInput('text', this.value)" class="retro-input w-20 text-xs px-1 py-1 rounded text-center uppercase">
+            </div>
+          </div>
+          <div class="flex items-center justify-between gap-2">
+            <label class="text-[11px] text-gray-500 whitespace-nowrap">이름 글자색</label>
+            <div class="flex items-center gap-2">
+              <div id="char-name-pickr"></div>
+              <input type="text" id="char-name-color-text" placeholder="#Hex" oninput="syncCharProfileColorInput('name', this.value)" class="retro-input w-20 text-xs px-1 py-1 rounded text-center uppercase">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 mt-1">
+        <button onclick="closeCharProfileModal()" class="retro-btn px-4 py-2 text-sm rounded">취소</button>
+        <button onclick="saveCharProfileModal()" class="retro-btn px-6 py-2 text-sm rounded font-bold retro-btn-accent">저장하기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Profile Image Crop Modal (separate from background image crop, forces 1:1 for avatars) -->
+  <div id="char-profile-crop-modal" class="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center hidden p-4">
+    <div class="retro-panel p-4 rounded-lg w-full max-w-md flex flex-col gap-4">
+      <h3 class="font-bold text-lg text-[#5c4a37] border-b border-[#e8ded4] pb-2 flex items-center gap-2">
+        <i class="fa-solid fa-crop-simple"></i> 프로필 사진 편집
+      </h3>
+      <p class="text-xs text-gray-500">동그란 프로필 사진으로 사용할 영역을 정사각형으로 잘라주세요.</p>
+
+      <div class="img-container rounded overflow-hidden relative">
+        <img id="char-profile-crop-image" src="" alt="Picture">
+      </div>
+
+      <div class="flex justify-end gap-2 mt-2">
+        <button onclick="closeCharProfileCropModal()" class="retro-btn px-4 py-2 text-sm rounded">취소</button>
+        <button onclick="applyCharProfileCrop()" class="retro-btn px-6 py-2 text-sm rounded font-bold retro-btn-accent">적용하기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Template Save/Edit Modal -->
+  <div id="template-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
+    <div class="retro-panel p-6 rounded-lg w-full max-w-sm flex flex-col gap-4 text-center">
+      <h3 class="font-bold text-lg text-[#5c4a37]" id="template-modal-title">템플릿 저장</h3>
+      <p class="text-xs text-gray-500 text-left">현재 설정(인물 목록, 대본 스타일)을 저장할 템플릿 이름을 입력하세요.</p>
+      <input type="text" id="template-name-input" class="retro-input px-3 py-2 text-sm rounded w-full" placeholder="내 템플릿 이름">
+      <input type="hidden" id="template-edit-id">
+      <div class="flex justify-end gap-2 mt-2">
+        <button onclick="closeTemplateModal()" class="retro-btn px-4 py-2 text-sm rounded">취소</button>
+        <button onclick="confirmSaveTemplate()" class="retro-btn px-6 py-2 text-sm rounded font-bold retro-btn-accent">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Expand Dialogue List Modal (내용 수정 및 순서 변경, enlarged) -->
+  <div id="expand-list-modal" class="fixed inset-0 bg-black/60 z-50 items-center justify-center hidden p-4">
+    <div class="retro-panel p-5 rounded-lg w-full max-w-3xl h-[85vh] flex flex-col gap-3">
+      <div class="flex justify-between items-center border-b border-[#e8ded4] pb-2 flex-wrap gap-y-1.5">
+        <h3 class="font-bold text-lg text-[#5c4a37] flex items-center gap-2">
+          <i class="fa-solid fa-list-check"></i> 내용 수정 및 순서 변경
+        </h3>
+        <div class="flex items-center gap-3">
+          <button onclick="addPageBreak()" class="retro-btn text-[10px] px-2 py-1 rounded flex items-center gap-1">
+            <i class="fa-solid fa-scissors"></i>
+          </button>
+          <button onclick="closeExpandListModal()" class="text-gray-400 hover:text-[#8b7355] text-2xl leading-none transition-colors" title="닫기">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+      </div>
+      <p class="text-[10px] text-gray-500">드래그로 순서 변경 · 선택으로 위치 지정 후 페이지 분할 삽입</p>
+      <div class="flex-grow overflow-y-auto border border-[#e8ded4] rounded p-2 bg-[#fdfcfb] flex flex-col gap-2" id="expand-list-body">
+        <!-- Dynamically filled, mirrors #dialogue-list -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Expand Textarea Modal (reused for 대사 입력 / 일괄 입력 content; auto-syncs live, no apply button needed) -->
+  <div id="expand-textarea-modal" class="fixed inset-0 bg-black/60 z-50 items-center justify-center hidden p-4">
+    <div class="retro-panel p-5 rounded-lg w-full max-w-2xl h-[80vh] flex flex-col gap-3">
+      <div class="flex justify-between items-center border-b border-[#e8ded4] pb-2">
+        <h3 class="font-bold text-lg text-[#5c4a37]" id="expand-textarea-title">내용 편집</h3>
+        <button onclick="closeExpandTextareaModal()" class="text-gray-400 hover:text-[#8b7355] text-2xl leading-none transition-colors" title="닫기">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Batch-input-only extras: shortcut tags (click to insert) + text cleanup tools. -->
+      <!-- These are the *actual* elements from the small 일괄 입력 panel, moved here while the modal is open. -->
+      <div id="expand-textarea-batch-extras" class="hidden flex-col gap-2">
+        <div id="expand-shortcut-slot"></div>
+        <div id="expand-cleanup-slot"></div>
+      </div>
+
+      <textarea id="expand-textarea-body" oninput="syncExpandTextarea()" class="retro-input px-3 py-2 text-sm rounded w-full resize-none flex-grow"></textarea>
+    </div>
+  </div>
+
+  <!-- Warning Popups Management Modal -->
+  <div id="warnings-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
+    <div class="retro-panel p-6 rounded-lg w-full max-w-sm flex flex-col gap-4">
+      <h3 class="font-bold text-lg text-[#5c4a37] border-b border-[#e8ded4] pb-2 flex items-center gap-2">
+        <i class="fa-solid fa-triangle-exclamation"></i> 경고 팝업 관리
+      </h3>
+
+      <div class="flex flex-col gap-3">
+        <label class="flex items-center justify-between gap-3 cursor-pointer">
+          <span class="text-sm font-semibold text-[#5c4a37]">전체 초기화</span>
+          <span class="relative inline-flex items-center">
+            <input type="checkbox" id="warn-reset-toggle" checked onchange="handleWarningToggle('reset','warn-reset-toggle')" class="sr-only peer">
+            <div class="w-9 h-5 bg-gray-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#8b7355]"></div>
+          </span>
+        </label>
+        <label class="flex items-center justify-between gap-3 cursor-pointer">
+          <span class="text-sm font-semibold text-[#5c4a37]">대사 전체삭제</span>
+          <span class="relative inline-flex items-center">
+            <input type="checkbox" id="warn-clearall-toggle" checked onchange="handleWarningToggle('clearAll','warn-clearall-toggle')" class="sr-only peer">
+            <div class="w-9 h-5 bg-gray-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#8b7355]"></div>
+          </span>
+        </label>
+        <label class="flex items-center justify-between gap-3 cursor-pointer">
+          <span class="text-sm font-semibold text-[#5c4a37]">일괄 입력 변환</span>
+          <span class="relative inline-flex items-center">
+            <input type="checkbox" id="warn-batchinput-toggle" checked onchange="handleWarningToggle('batchInput','warn-batchinput-toggle')" class="sr-only peer">
+            <div class="w-9 h-5 bg-gray-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#8b7355]"></div>
+          </span>
+        </label>
+        <label class="flex items-center justify-between gap-3 cursor-pointer">
+          <span class="text-sm font-semibold text-[#5c4a37]">이미지 저장</span>
+          <span class="relative inline-flex items-center">
+            <input type="checkbox" id="warn-imagesave-toggle" checked onchange="handleWarningToggle('imageSave','warn-imagesave-toggle')" class="sr-only peer">
+            <div class="w-9 h-5 bg-gray-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#8b7355]"></div>
+          </span>
+        </label>
+      </div>
+
+      <div class="flex justify-end gap-2 mt-2">
+        <button onclick="closeWarningsModal()" class="retro-btn px-6 py-2 text-sm rounded font-bold retro-btn-accent">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Alert/Confirm Popup -->
+  <div id="custom-alert" class="fixed inset-0 bg-black/50 z-[70] flex items-center justify-center hidden p-4">
+    <div class="retro-panel p-6 rounded-lg w-full max-w-md flex flex-col gap-4 text-center">
+      <div class="text-[#8b7355] text-4xl" id="alert-icon">
+        <i class="fa-solid fa-circle-question"></i>
+      </div>
+      <h3 class="font-bold text-lg text-[#5c4a37]" id="alert-title">안내</h3>
+      <p class="text-sm text-gray-600 leading-relaxed whitespace-pre-line" id="alert-message"></p>
+      <div class="flex justify-center gap-2 mt-2">
+        <button id="alert-cancel-btn" onclick="closeAlert()" class="retro-btn px-4 py-2 text-sm rounded hidden">취소</button>
+        <button id="alert-confirm-btn" class="retro-btn px-6 py-2 text-sm rounded font-bold retro-btn-accent">확인</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Pickr Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/pickr.min.js"></script>
+  <!-- Cropper.js Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+
+  <script src="script.js"></script>
+</body>
+</html>
