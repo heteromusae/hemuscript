@@ -1,4 +1,4 @@
-    // --- COLOR MAP FOR CHARACTER TAGS ---
+     // --- COLOR MAP FOR CHARACTER TAGS ---
     const colorMap = {
       '빨강': { bg: '#fee2e2', text: '#ef4444', border: '#fca5a5' },
       '주황': { bg: '#ffedd5', text: '#f97316', border: '#fdba74' },
@@ -42,10 +42,43 @@
         bgBlur: 0,
         wrapMode: 'char',
         narratorAlign: 'left',
-        characterAlign: 'left'
+        characterAlign: 'left',
+        dialogueFormat: 'plain'
       },
       templates: [] 
     };
+
+    // --- CHARACTER PROFILE DEFAULTS / NORMALIZATION ---
+    // Ensures every character object (whether newly created, loaded from localStorage,
+    // imported from a template file, or migrated from an older save) has the full
+    // set of chat-bubble-related profile fields with sensible defaults.
+    function normalizeCharacter(c) {
+      const info = colorMap[c.color] || colorMap['회색'];
+      return {
+        name: c.name,
+        color: c.color || '회색',
+        shortcuts: c.shortcuts ? c.shortcuts.slice() : (c.shortcut ? [c.shortcut] : []),
+        profileImage: c.profileImage || null,
+        profileImageEnabled: c.profileImageEnabled === undefined ? false : !!c.profileImageEnabled,
+        align: c.align === 'right' ? 'right' : 'left',
+        bubbleColor: c.bubbleColor || info.bg,
+        textColor: c.textColor || '#2c221e',
+        nameColor: c.nameColor || info.text
+      };
+    }
+
+    // Alternates left/right for newly-created characters so a fresh chat-format
+    // script naturally splits speakers across both sides.
+    function pickAutoAlign() {
+      const nonNarratorCount = state.characters.filter(c => c.name !== '나레이터').length;
+      return nonNarratorCount % 2 === 0 ? 'left' : 'right';
+    }
+
+    function createCharacterDefaults(name, color) {
+      const c = normalizeCharacter({ name, color });
+      c.align = pickAutoAlign();
+      return c;
+    }
 
     let historyStack = [];
     let historyIndex = -1;
@@ -178,14 +211,12 @@
             if(state.config.wrapMode === undefined) state.config.wrapMode = 'char';
             if(state.config.narratorAlign === undefined) state.config.narratorAlign = 'left';
             if(state.config.characterAlign === undefined) state.config.characterAlign = 'left';
-            if(state.characters) state.characters.forEach(c => {
-              if (c.shortcuts === undefined) c.shortcuts = c.shortcut ? [c.shortcut] : [];
-              delete c.shortcut;
+            if(state.config.dialogueFormat === undefined) state.config.dialogueFormat = 'plain';
+            if(state.characters) state.characters = state.characters.map(normalizeCharacter);
+            if(state.templates) state.templates.forEach(t => {
+              if (t.characters) t.characters = t.characters.map(normalizeCharacter);
+              if (t.config && t.config.dialogueFormat === undefined) t.config.dialogueFormat = 'plain';
             });
-            if(state.templates) state.templates.forEach(t => { if (t.characters) t.characters.forEach(c => {
-              if (c.shortcuts === undefined) c.shortcuts = c.shortcut ? [c.shortcut] : [];
-              delete c.shortcut;
-            }); });
           }
         } catch (e) {
           console.error('로컬스토리지 데이터를 가져오는 중에 오류가 발생했습니다:', e);
@@ -484,6 +515,7 @@
       document.getElementById('wrap-mode').value = conf.wrapMode;
       document.getElementById('narrator-align').value = conf.narratorAlign;
       document.getElementById('character-align').value = conf.characterAlign;
+      document.getElementById('dialogue-format').value = conf.dialogueFormat || 'plain';
 
       if (conf.bgImage) {
         document.getElementById('btn-clear-bg').classList.remove('hidden');
@@ -520,6 +552,7 @@
         conf.wrapMode = document.getElementById('wrap-mode').value;
         conf.narratorAlign = document.getElementById('narrator-align').value;
         conf.characterAlign = document.getElementById('character-align').value;
+        conf.dialogueFormat = document.getElementById('dialogue-format').value;
       }
       updateTextureLabels();
       saveLocalState(); 
@@ -729,13 +762,11 @@
             showCustomAlert('올바른 템플릿 파일이 아닙니다.');
             return;
           }
+          if (parsed.config && parsed.config.dialogueFormat === undefined) parsed.config.dialogueFormat = 'plain';
           const newTemplate = {
             id: Date.now().toString(),
             name: parsed.name || '가져온 템플릿',
-            characters: parsed.characters.map(c => ({
-              name: c.name, color: c.color || '회색',
-              shortcuts: c.shortcuts ? c.shortcuts.slice() : (c.shortcut ? [c.shortcut] : [])
-            })),
+            characters: parsed.characters.map(normalizeCharacter),
             config: parsed.config
           };
           state.templates.push(newTemplate);
@@ -846,11 +877,20 @@
         
         const nameSpan = document.createElement('span');
         nameSpan.innerText = charObj.name;
+
+        if (charObj.name !== '나레이터') {
+          tag.classList.add('cursor-pointer', 'hover:brightness-95', 'active:scale-95', 'transition');
+          tag.title = '클릭하면 프로필(채팅형 말풍선) 설정을 편집할 수 있어요';
+          tag.onclick = function(e) {
+            if (e.target === deleteBtn) return;
+            openCharProfileModal(idx);
+          };
+        }
         
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'opacity-70 hover:opacity-100 font-bold ml-1 transition-opacity';
         deleteBtn.innerHTML = '×';
-        deleteBtn.onclick = function() { removeCharacter(idx); };
+        deleteBtn.onclick = function(e) { e.stopPropagation(); removeCharacter(idx); };
 
         tag.appendChild(nameSpan);
         if (charObj.name !== '나레이터') tag.appendChild(deleteBtn);
@@ -1004,7 +1044,7 @@
       if (!name) return showCustomAlert('인물명을 입력해 주세요.');
       if (state.characters.find(c => c.name === name)) return showCustomAlert('이미 존재하는 인물명입니다.');
       
-      state.characters.push({ name: name, color: color, shortcuts: [] });
+      state.characters.push(createCharacterDefaults(name, color));
       input.value = '';
       commitHistory();
       renderCharacterTags();
@@ -1020,6 +1060,191 @@
         renderDialogueList();
         renderCanvas();
       });
+    }
+
+    // --- CHARACTER PROFILE (CHAT BUBBLE) SETTINGS MODAL ---
+    let charProfileEditIdx = null;
+    let charProfileDraft = null; // working copy edited in the modal, committed to state on save
+    let charBubblePickr = null;
+    let charTextPickr = null;
+    let charNamePickr = null;
+    let charProfileCropperInstance = null;
+
+    function initCharProfilePickr() {
+      const pickrOptions = {
+        theme: 'classic',
+        components: {
+          preview: true,
+          opacity: false,
+          hue: true,
+          interaction: { hex: true, input: true, save: true }
+        }
+      };
+      charBubblePickr = Pickr.create({ el: '#char-bubble-pickr', default: '#ffffff', ...pickrOptions });
+      charTextPickr = Pickr.create({ el: '#char-text-pickr', default: '#2c221e', ...pickrOptions });
+      charNamePickr = Pickr.create({ el: '#char-name-pickr', default: '#2c221e', ...pickrOptions });
+
+      charBubblePickr.on('change', (color) => {
+        const hex = color.toHEXA().toString();
+        document.getElementById('char-bubble-color-text').value = hex;
+        if (charProfileDraft) charProfileDraft.bubbleColor = hex;
+      });
+      charTextPickr.on('change', (color) => {
+        const hex = color.toHEXA().toString();
+        document.getElementById('char-text-color-text').value = hex;
+        if (charProfileDraft) charProfileDraft.textColor = hex;
+      });
+      charNamePickr.on('change', (color) => {
+        const hex = color.toHEXA().toString();
+        document.getElementById('char-name-color-text').value = hex;
+        if (charProfileDraft) charProfileDraft.nameColor = hex;
+      });
+    }
+
+    function syncCharProfileColorInput(type, hexVal) {
+      if (!/^#([0-9A-F]{3}){1,2}$/i.test(hexVal)) return;
+      if (!charProfileDraft) return;
+      if (type === 'bubble') { charBubblePickr.setColor(hexVal); charProfileDraft.bubbleColor = hexVal; }
+      else if (type === 'text') { charTextPickr.setColor(hexVal); charProfileDraft.textColor = hexVal; }
+      else if (type === 'name') { charNamePickr.setColor(hexVal); charProfileDraft.nameColor = hexVal; }
+    }
+
+    function updateCharProfileAlignLabels() {
+      const selected = document.querySelector('input[name="char-profile-align"]:checked');
+      const val = selected ? selected.value : 'left';
+      if (charProfileDraft) charProfileDraft.align = val;
+      ['left', 'right'].forEach(v => {
+        const lbl = document.getElementById('char-align-lbl-' + v);
+        if (v === val) {
+          lbl.classList.add('border-[#8b7355]', 'bg-[#f4eae1]');
+          lbl.classList.remove('border-transparent');
+        } else {
+          lbl.classList.remove('border-[#8b7355]', 'bg-[#f4eae1]');
+        }
+      });
+    }
+
+    function updateCharProfileImagePreview() {
+      const preview = document.getElementById('char-profile-image-preview');
+      const clearBtn = document.getElementById('char-profile-image-clear-btn');
+      if (charProfileDraft && charProfileDraft.profileImage) {
+        preview.innerHTML = `<img src="${charProfileDraft.profileImage}" class="w-full h-full object-cover">`;
+        clearBtn.classList.remove('hidden');
+      } else {
+        preview.innerHTML = '<i class="fa-solid fa-user text-[#a89786] text-xl"></i>';
+        clearBtn.classList.add('hidden');
+      }
+    }
+
+    function handleCharProfileImageToggle() {
+      if (!charProfileDraft) return;
+      charProfileDraft.profileImageEnabled = document.getElementById('char-profile-image-toggle').checked;
+    }
+
+    function openCharProfileModal(idx) {
+      charProfileEditIdx = idx;
+      const charObj = state.characters[idx];
+      charProfileDraft = JSON.parse(JSON.stringify(normalizeCharacter(charObj)));
+
+      document.getElementById('char-profile-modal-title').innerText = `"${charObj.name}" 프로필 설정`;
+      document.getElementById('char-profile-image-toggle').checked = charProfileDraft.profileImageEnabled;
+      updateCharProfileImagePreview();
+
+      const alignRadio = document.querySelector(`input[name="char-profile-align"][value="${charProfileDraft.align}"]`);
+      if (alignRadio) alignRadio.checked = true;
+      updateCharProfileAlignLabels();
+
+      if (!charBubblePickr) initCharProfilePickr();
+      charBubblePickr.setColor(charProfileDraft.bubbleColor);
+      charTextPickr.setColor(charProfileDraft.textColor);
+      charNamePickr.setColor(charProfileDraft.nameColor);
+      document.getElementById('char-bubble-color-text').value = charProfileDraft.bubbleColor;
+      document.getElementById('char-text-color-text').value = charProfileDraft.textColor;
+      document.getElementById('char-name-color-text').value = charProfileDraft.nameColor;
+
+      document.getElementById('char-profile-modal').classList.remove('hidden');
+    }
+
+    function closeCharProfileModal() {
+      document.getElementById('char-profile-modal').classList.add('hidden');
+      charProfileEditIdx = null;
+      charProfileDraft = null;
+      document.getElementById('char-profile-image-upload').value = '';
+    }
+
+    function saveCharProfileModal() {
+      if (charProfileEditIdx === null || !charProfileDraft) return closeCharProfileModal();
+      const target = state.characters[charProfileEditIdx];
+      if (target) {
+        target.profileImage = charProfileDraft.profileImage;
+        target.profileImageEnabled = charProfileDraft.profileImageEnabled;
+        target.align = charProfileDraft.align;
+        target.bubbleColor = charProfileDraft.bubbleColor;
+        target.textColor = charProfileDraft.textColor;
+        target.nameColor = charProfileDraft.nameColor;
+      }
+      commitHistory();
+      renderCharacterTags();
+      renderDialogueList();
+      renderCanvas();
+      closeCharProfileModal();
+    }
+
+    // Profile picture upload + crop (forced square, similar flow to background image crop)
+    function handleCharProfileImageUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const imageElement = document.getElementById('char-profile-crop-image');
+        imageElement.src = event.target.result;
+        document.getElementById('char-profile-crop-modal').classList.remove('hidden');
+
+        if (charProfileCropperInstance) {
+          charProfileCropperInstance.destroy();
+        }
+
+        charProfileCropperInstance = new Cropper(imageElement, {
+          aspectRatio: 1,
+          viewMode: 1,
+          autoCropArea: 1,
+          background: false,
+        });
+      };
+      reader.readAsDataURL(file);
+      e.target.value = '';
+    }
+
+    function closeCharProfileCropModal() {
+      document.getElementById('char-profile-crop-modal').classList.add('hidden');
+      if (charProfileCropperInstance) {
+        charProfileCropperInstance.destroy();
+        charProfileCropperInstance = null;
+      }
+    }
+
+    function applyCharProfileCrop() {
+      if (!charProfileCropperInstance) return;
+
+      const canvas = charProfileCropperInstance.getCroppedCanvas({
+        width: 256,
+        height: 256
+      });
+
+      if (canvas && charProfileDraft) {
+        charProfileDraft.profileImage = canvas.toDataURL('image/png');
+        charProfileDraft.profileImageEnabled = true;
+        document.getElementById('char-profile-image-toggle').checked = true;
+        updateCharProfileImagePreview();
+      }
+      closeCharProfileCropModal();
+    }
+
+    function clearCharProfileImage() {
+      if (!charProfileDraft) return;
+      charProfileDraft.profileImage = null;
+      updateCharProfileImagePreview();
     }
 
     // --- DIALOGUE MANAGEMENT ---
@@ -1297,7 +1522,7 @@
           if (matchedChar) {
             let charObj = state.characters.find(c => c.name === matchedChar);
             if (!charObj) {
-              charObj = { name: matchedChar, color: pickAutoColor(), shortcuts: [] };
+              charObj = createCharacterDefaults(matchedChar, pickAutoColor());
               state.characters.push(charObj);
               newCharactersCreated.push(matchedChar);
             }
@@ -1355,13 +1580,55 @@
 
     // Drag & Drop
     let dragSrcElement = null;
+    // Auto-scroll state: while dragging, keep scrolling the item's scrollable container
+    // (either the sidebar #dialogue-list or the modal's #expand-list-body) when the
+    // cursor nears its top/bottom edge, so long lists can be reordered by dragging past
+    // the visible area.
+    let dragAutoScrollContainer = null;
+    let dragAutoScrollClientY = null;
+    let dragAutoScrollRAF = null;
+    const DRAG_AUTOSCROLL_EDGE = 60;   // px zone near top/bottom that triggers scrolling
+    const DRAG_AUTOSCROLL_MAX_SPEED = 16; // px per animation frame at the very edge
+
+    function dragAutoScrollTick() {
+      if (dragAutoScrollContainer && dragAutoScrollClientY !== null) {
+        const rect = dragAutoScrollContainer.getBoundingClientRect();
+        let dy = 0;
+        if (dragAutoScrollClientY < rect.top + DRAG_AUTOSCROLL_EDGE) {
+          const dist = Math.min(DRAG_AUTOSCROLL_EDGE, Math.max(0, dragAutoScrollClientY - rect.top));
+          dy = -DRAG_AUTOSCROLL_MAX_SPEED * (1 - dist / DRAG_AUTOSCROLL_EDGE);
+        } else if (dragAutoScrollClientY > rect.bottom - DRAG_AUTOSCROLL_EDGE) {
+          const dist = Math.min(DRAG_AUTOSCROLL_EDGE, Math.max(0, rect.bottom - dragAutoScrollClientY));
+          dy = DRAG_AUTOSCROLL_MAX_SPEED * (1 - dist / DRAG_AUTOSCROLL_EDGE);
+        }
+        if (dy !== 0) dragAutoScrollContainer.scrollTop += dy;
+      }
+      dragAutoScrollRAF = requestAnimationFrame(dragAutoScrollTick);
+    }
+    function startDragAutoScroll(container) {
+      dragAutoScrollContainer = container;
+      dragAutoScrollClientY = null;
+      if (!dragAutoScrollRAF) dragAutoScrollRAF = requestAnimationFrame(dragAutoScrollTick);
+    }
+    function stopDragAutoScroll() {
+      if (dragAutoScrollRAF) cancelAnimationFrame(dragAutoScrollRAF);
+      dragAutoScrollRAF = null;
+      dragAutoScrollContainer = null;
+      dragAutoScrollClientY = null;
+    }
+
     function handleDragStart(e) {
       dragSrcElement = this;
       e.dataTransfer.effectAllowed = 'move';
       e.dataTransfer.setData('text/plain', this.getAttribute('data-id'));
       this.classList.add('opacity-40');
+      startDragAutoScroll(this.parentElement);
     }
-    function handleDragOver(e) { e.preventDefault(); return false; }
+    function handleDragOver(e) {
+      e.preventDefault();
+      dragAutoScrollClientY = e.clientY;
+      return false;
+    }
     function handleDrop(e) {
       e.stopPropagation(); e.preventDefault();
       if (dragSrcElement !== this) {
@@ -1379,7 +1646,7 @@
       }
       return false;
     }
-    function handleDragEnd() { this.classList.remove('opacity-40'); }
+    function handleDragEnd() { this.classList.remove('opacity-40'); stopDragAutoScroll(); }
 
     // Edit Modal
     function openEditModal(id) {
@@ -1456,6 +1723,206 @@
       });
     }
 
+    // --- CHAT BUBBLE FORMAT: layout measurement helpers ---
+    // Computes all geometry/text-wrap info needed to both paginate and draw a single
+    // chat message bubble for a given dialogue entry. Returns an item compatible with
+    // the same pageData/pagination flow used by the plain dialogue format
+    // (i.e. it always carries a numeric `calculatedHeight`).
+    function measureChatBubble(mctx, d, conf, charObj, printableWidth, bodyLinesOverride) {
+      const fontSize = conf.fontSize;
+      const lineHeight = fontSize * 1.5;
+      const avatarSize = Math.round(fontSize * 2.2);
+      const avatarGap = Math.round(fontSize * 0.6);
+      const bubblePadX = Math.round(fontSize * 0.7);
+      const bubblePadY = Math.round(fontSize * 0.55);
+      const nameFontSize = Math.max(13, Math.round(fontSize * 0.8));
+      const nameGap = Math.round(fontSize * 0.35);
+      const align = (charObj && charObj.align === 'right') ? 'right' : 'left';
+      const avatarEnabled = !!(charObj && charObj.profileImageEnabled && charObj.profileImage);
+
+      const maxBubbleOuterWidth = Math.round(printableWidth * 0.72);
+      const maxTextWidth = Math.max(20, maxBubbleOuterWidth - bubblePadX * 2);
+
+      mctx.font = `${fontSize}px ${conf.fontFamily}`;
+      const bodyLines = bodyLinesOverride || wrapText(mctx, d.text, maxTextWidth, fontSize, conf.fontFamily, conf.wrapMode);
+
+      let actualTextWidth = 0;
+      bodyLines.forEach(line => {
+        const w = mctx.measureText(line).width;
+        if (w > actualTextWidth) actualTextWidth = w;
+      });
+      const minBubbleWidth = bubblePadX * 2 + fontSize * 1.5;
+      const bubbleWidth = Math.min(maxBubbleOuterWidth, Math.max(minBubbleWidth, Math.ceil(actualTextWidth) + bubblePadX * 2));
+      const bubbleHeight = bubblePadY * 2 + bodyLines.length * lineHeight;
+
+      mctx.font = `bold ${nameFontSize}px ${conf.fontFamily}`;
+      const nameLineHeight = Math.round(nameFontSize * 1.3);
+      const nameBlockHeight = nameLineHeight + nameGap;
+
+      const contentHeight = nameBlockHeight + bubbleHeight;
+      const totalHeight = avatarEnabled ? Math.max(contentHeight, avatarSize) : contentHeight;
+
+      return {
+        isChatBubble: true,
+        isNarrative: false,
+        char: d.char,
+        align, avatarEnabled,
+        avatarImg: null, // filled in by caller (needs preloaded image map)
+        bodyLines, nameLines: [d.char],
+        fontSize, lineHeight, avatarSize, avatarGap, bubblePadX, bubblePadY,
+        nameFontSize, nameGap, nameLineHeight,
+        bubbleWidth, bubbleHeight,
+        bubbleColor: (charObj && charObj.bubbleColor) || '#ffffff',
+        textColor: (charObj && charObj.textColor) || '#2c221e',
+        nameColor: (charObj && charObj.nameColor) || '#2c221e',
+        calculatedHeight: totalHeight
+      };
+    }
+
+    // Splits an oversized chat bubble's body lines into page-sized chunks (mirrors the
+    // plain-format "itemHeight > printableHeight" splitting behavior). Only the first
+    // chunk keeps the name label; avatar visibility is preserved for all chunks.
+    function splitChatBubbleForPages(mctx, d, conf, charObj, printableWidth, printableHeight, allBodyLines) {
+      const items = [];
+      let remaining = [...allBodyLines];
+      let first = true;
+      while (remaining.length > 0) {
+        // Binary-search-ish: try progressively larger chunks until it no longer fits
+        let lo = 1, hi = remaining.length, best = 1;
+        while (lo <= hi) {
+          const mid = Math.floor((lo + hi) / 2);
+          const testItem = measureChatBubble(mctx, d, conf, charObj, printableWidth, remaining.slice(0, mid));
+          if (testItem.calculatedHeight <= printableHeight) {
+            best = mid;
+            lo = mid + 1;
+          } else {
+            hi = mid - 1;
+          }
+        }
+        const chunk = remaining.splice(0, Math.max(1, best));
+        const item = measureChatBubble(mctx, d, conf, charObj, printableWidth, chunk);
+        if (!first) item.nameLines = [];
+        first = false;
+        items.push(item);
+      }
+      return items;
+    }
+
+    // Draws one chat bubble (avatar + name label + rounded speech bubble) at the
+    // given top-left y position within the printable content band [padL, padL+printableWidth].
+    function drawChatBubble(ctx, item, padL, printableWidth, yPos, conf) {
+      const {
+        align, avatarEnabled, avatarImg, bodyLines, nameLines,
+        fontSize, lineHeight, avatarSize, avatarGap, bubblePadX, bubblePadY,
+        nameFontSize, nameGap, nameLineHeight, bubbleWidth, bubbleHeight,
+        bubbleColor, textColor, nameColor
+      } = item;
+
+      const isRight = align === 'right';
+      const rowRight = padL + printableWidth;
+
+      let avatarX, bubbleX;
+      if (isRight) {
+        avatarX = avatarEnabled ? rowRight - avatarSize : rowRight;
+        bubbleX = (avatarEnabled ? avatarX - avatarGap : rowRight) - bubbleWidth;
+      } else {
+        avatarX = padL;
+        bubbleX = padL + (avatarEnabled ? avatarSize + avatarGap : 0);
+      }
+
+      const contentHeight = nameLineHeight + nameGap + bubbleHeight;
+      const blockTop = yPos + (item.calculatedHeight - contentHeight) / 2;
+      // Avatar is pinned to the top of the content block (name+bubble) instead of being
+      // vertically centered, so it stays fixed at the top even as the bubble grows tall.
+      const avatarY = blockTop;
+
+      // Avatar (circular)
+      if (avatarEnabled) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
+        ctx.closePath();
+        ctx.clip();
+        if (avatarImg) {
+          ctx.drawImage(avatarImg, avatarX, avatarY, avatarSize, avatarSize);
+        } else {
+          ctx.fillStyle = '#d4c5b9';
+          ctx.fillRect(avatarX, avatarY, avatarSize, avatarSize);
+        }
+        ctx.restore();
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(0,0,0,0.08)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // Name label
+      if (nameLines.length > 0) {
+        ctx.save();
+        ctx.font = `bold ${nameFontSize}px ${conf.fontFamily}`;
+        ctx.fillStyle = nameColor;
+        ctx.textAlign = isRight ? 'right' : 'left';
+        const nameX = isRight ? bubbleX + bubbleWidth : bubbleX;
+        const nameY = blockTop + Math.round(fontSize * 0.1);
+        ctx.fillText(nameLines[0], nameX, nameY);
+        ctx.restore();
+      }
+
+      const bubbleTop = blockTop + nameLineHeight + nameGap;
+      const radius = Math.round(fontSize * 0.55);
+
+      // Bubble background (rounded rect)
+      ctx.save();
+      ctx.fillStyle = bubbleColor;
+      ctx.beginPath();
+      drawRoundedRectPath(ctx, bubbleX, bubbleTop, bubbleWidth, bubbleHeight, radius);
+      ctx.fill();
+      ctx.restore();
+
+      // Bubble text
+      // Center each line's actual glyph box within its lineHeight slot (rather than
+      // aligning to 'top', which leaves a much bigger gap below the text than above it)
+      // so the visible text block sits evenly between the bubble's top/bottom padding.
+      ctx.save();
+      ctx.font = `${fontSize}px ${conf.fontFamily}`;
+      ctx.fillStyle = textColor;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'alphabetic';
+      const { ascent, descent } = getFontVerticalMetrics(ctx, fontSize, conf.fontFamily);
+      const glyphBoxHeight = ascent + descent;
+      const baselineOffset = (lineHeight - glyphBoxHeight) / 2 + ascent;
+      bodyLines.forEach((line, idx) => {
+        ctx.fillText(line, bubbleX + bubblePadX, bubbleTop + bubblePadY + idx * lineHeight + baselineOffset);
+      });
+      ctx.restore();
+    }
+
+    // Measures a font's real vertical metrics (ascent/descent) so text can be centered
+    // inside a fixed line-height slot instead of just hugging the top of it (which is
+    // what caused chat-bubble text to look pushed upward with mismatched top/bottom padding).
+    function getFontVerticalMetrics(ctx, fontPx, fontFamily) {
+      ctx.font = `${fontPx}px ${fontFamily}`;
+      const m = ctx.measureText('가힣AjpqyMg');
+      const hasFontBox = Number.isFinite(m.fontBoundingBoxAscent) && Number.isFinite(m.fontBoundingBoxDescent);
+      const hasActualBox = Number.isFinite(m.actualBoundingBoxAscent) && Number.isFinite(m.actualBoundingBoxDescent);
+      const ascent = hasFontBox ? m.fontBoundingBoxAscent : (hasActualBox ? m.actualBoundingBoxAscent : fontPx * 0.8);
+      const descent = hasFontBox ? m.fontBoundingBoxDescent : (hasActualBox ? m.actualBoundingBoxDescent : fontPx * 0.2);
+      return { ascent, descent };
+    }
+
+    function drawRoundedRectPath(ctx, x, y, w, h, r) {
+      const radius = Math.min(r, w / 2, h / 2);
+      ctx.moveTo(x + radius, y);
+      ctx.arcTo(x + w, y, x + w, y + h, radius);
+      ctx.arcTo(x + w, y + h, x, y + h, radius);
+      ctx.arcTo(x, y + h, x, y, radius);
+      ctx.arcTo(x, y, x + w, y, radius);
+      ctx.closePath();
+    }
+
     // Sums item heights + inter-item spacing for a page's dialogue block (used by 중앙부터 입력 mode)
     function computeDialogueBlockHeight(pageData, lineSpacing) {
       let h = 0;
@@ -1485,6 +1952,23 @@
       let loadedBgImage = null;
       if (conf.bgImage) {
         loadedBgImage = await loadImage(conf.bgImage);
+      }
+
+      const isChatFormat = conf.dialogueFormat === 'chat';
+
+      // Load Character Profile/Avatar Images if in chat format (only the ones actually used & enabled)
+      let avatarImageMap = {};
+      if (isChatFormat) {
+        const neededNames = new Set();
+        dList.forEach(d => { if (d.type !== 'pagebreak' && d.char !== '나레이터') neededNames.add(d.char); });
+        const loadJobs = [];
+        neededNames.forEach(name => {
+          const charObj = state.characters.find(c => c.name === name);
+          if (charObj && charObj.profileImageEnabled && charObj.profileImage) {
+            loadJobs.push(loadImage(charObj.profileImage).then(img => { avatarImageMap[name] = img; }));
+          }
+        });
+        if (loadJobs.length > 0) await Promise.all(loadJobs);
       }
 
       const cWidth = conf.width;
@@ -1517,7 +2001,30 @@
           continue;
         }
 
-        const isNarrative = d.char === '나레이터'; 
+        const isNarrative = d.char === '나레이터';
+
+        // --- CHAT BUBBLE FORMAT ---
+        if (isChatFormat && !isNarrative) {
+          const charObj = state.characters.find(c => c.name === d.char);
+          const item = measureChatBubble(mctx, d, conf, charObj, printableWidth);
+          const neededSpacing = currentPageLines.length > 0 ? conf.lineSpacing : 0;
+
+          if (currentHeight + neededSpacing + item.calculatedHeight > printableHeight) {
+            if (currentPageLines.length > 0) {
+              pages.push(currentPageLines);
+              currentPageLines = [];
+              currentHeight = 0;
+            }
+            if (item.calculatedHeight > printableHeight) {
+              const splitItems = splitChatBubbleForPages(mctx, d, conf, charObj, printableWidth, printableHeight, item.bodyLines);
+              splitItems.forEach(splitItem => pages.push([splitItem]));
+              continue;
+            }
+          }
+          currentHeight += neededSpacing + item.calculatedHeight;
+          currentPageLines.push(item);
+          continue;
+        }
         
         let characterNameLines = [];
         if (!isNarrative) {
@@ -1720,6 +2227,15 @@
         let yPos = conf.centerMode ? centerDialogueStartY : padT;
         pageData.forEach((item, itemIdx) => {
           if (itemIdx > 0) yPos += conf.lineSpacing;
+
+          if (item.isChatBubble) {
+            ctx.save();
+            item.avatarImg = avatarImageMap[item.char] || null;
+            drawChatBubble(ctx, item, padL, printableWidth, yPos, conf);
+            ctx.restore();
+            yPos += item.calculatedHeight;
+            return;
+          }
           
           ctx.save();
           ctx.font = `${conf.fontSize}px ${conf.fontFamily}`;
@@ -1953,7 +2469,7 @@
           width: 1080, height: 1080, fontFamily: "'Gowun Batang', serif", fontSize: 24, nameWidthRatio: 8, lineSpacing: 40,
           bgColor: '#f5f2eb', fgColor: '#2c221e', paperTexture: 'pulp', pageFooterEnabled: false, footerPosition: 'bottom-left',
           footerMode: 'unified', footerUnifiedText: '— 헤무대본 제 1장 —', pageTexts: [], autoCrop: false, centerMode: false, bgImage: null, bgOpacity: 50, bgBlur: 0,
-          wrapMode: 'char', narratorAlign: 'left', characterAlign: 'left'
+          wrapMode: 'char', narratorAlign: 'left', characterAlign: 'left', dialogueFormat: 'plain'
         };
         document.getElementById('btn-clear-bg').classList.add('hidden');
         commitHistory();
