@@ -1731,11 +1731,11 @@
     function measureChatBubble(mctx, d, conf, charObj, printableWidth, bodyLinesOverride) {
       const fontSize = conf.fontSize;
       const lineHeight = fontSize * 1.5;
-      const avatarSize = Math.round(fontSize * 2.2);
+      const avatarSize = Math.round(fontSize * 2.5);
       const avatarGap = Math.round(fontSize * 0.6);
       const bubblePadX = Math.round(fontSize * 0.7);
       const bubblePadY = Math.round(fontSize * 0.55);
-      const nameFontSize = Math.max(13, Math.round(fontSize * 0.8));
+      const nameFontSize = Math.max(13, Math.round(fontSize * 0.87));
       const nameGap = Math.round(fontSize * 0.35);
       const align = (charObj && charObj.align === 'right') ? 'right' : 'left';
       const avatarEnabled = !!(charObj && charObj.profileImageEnabled && charObj.profileImage);
@@ -1834,7 +1834,7 @@
       const blockTop = yPos + (item.calculatedHeight - contentHeight) / 2;
       // Avatar is pinned to the top of the content block (name+bubble) instead of being
       // vertically centered, so it stays fixed at the top even as the bubble grows tall.
-      const avatarY = blockTop;
+      const avatarY = blockTop + 3;
 
       // Avatar (circular)
       if (avatarEnabled) {
@@ -1866,7 +1866,7 @@
         ctx.fillStyle = nameColor;
         ctx.textAlign = isRight ? 'right' : 'left';
         const nameX = isRight ? bubbleX + bubbleWidth : bubbleX;
-        const nameY = blockTop + Math.round(fontSize * 0.1);
+        const nameY = blockTop + Math.round(fontSize * 0.1) + 1;
         ctx.fillText(nameLines[0], nameX, nameY);
         ctx.restore();
       }
