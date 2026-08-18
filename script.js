@@ -1834,7 +1834,7 @@
       const blockTop = yPos + (item.calculatedHeight - contentHeight) / 2;
       // Avatar is pinned to the top of the content block (name+bubble) instead of being
       // vertically centered, so it stays fixed at the top even as the bubble grows tall.
-      const avatarY = blockTop + 3;
+      const avatarY = blockTop + 4;
 
       // Avatar (circular)
       if (avatarEnabled) {
