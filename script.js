@@ -1731,7 +1731,7 @@
     function measureChatBubble(mctx, d, conf, charObj, printableWidth, bodyLinesOverride) {
       const fontSize = conf.fontSize;
       const lineHeight = fontSize * 1.5;
-      const avatarSize = Math.round(fontSize * 2.5);
+      const avatarSize = Math.round(fontSize * 2.7);
       const avatarGap = Math.round(fontSize * 0.6);
       const bubblePadX = Math.round(fontSize * 0.7);
       const bubblePadY = Math.round(fontSize * 0.55);
