@@ -25,6 +25,8 @@
         height: 1080,
         fontFamily: "'Gowun Batang', serif",
         fontSize: 24,
+        letterSpacing: 0,
+        lineHeightRatio: 150,
         nameWidthRatio: 8,
         lineSpacing: 40,
         bgColor: '#f5f2eb',
@@ -209,6 +211,8 @@
             if(state.config.bgOpacity === undefined) state.config.bgOpacity = 50;
             if(state.config.bgBlur === undefined) state.config.bgBlur = 0;
             if(state.config.wrapMode === undefined) state.config.wrapMode = 'char';
+            if(state.config.letterSpacing === undefined) state.config.letterSpacing = 0;
+            if(state.config.lineHeightRatio === undefined) state.config.lineHeightRatio = 150;
             if(state.config.narratorAlign === undefined) state.config.narratorAlign = 'left';
             if(state.config.characterAlign === undefined) state.config.characterAlign = 'left';
             if(state.config.dialogueFormat === undefined) state.config.dialogueFormat = 'plain';
@@ -486,6 +490,10 @@
       document.getElementById('font-family').value = conf.fontFamily;
       document.getElementById('font-size').value = conf.fontSize;
       document.getElementById('font-size-val').innerText = conf.fontSize + 'px';
+      document.getElementById('letter-spacing').value = conf.letterSpacing;
+      document.getElementById('letter-spacing-val').innerText = conf.letterSpacing + 'px';
+      document.getElementById('line-height-ratio').value = conf.lineHeightRatio;
+      document.getElementById('line-height-ratio-val').innerText = conf.lineHeightRatio + '%';
       document.getElementById('name-width-ratio').value = conf.nameWidthRatio;
       document.getElementById('name-width-val').innerText = conf.nameWidthRatio + '%';
       document.getElementById('line-spacing').value = conf.lineSpacing;
@@ -533,6 +541,8 @@
         conf.height = parseInt(document.getElementById('canvas-height').value) || 1080;
         conf.fontFamily = document.getElementById('font-family').value;
         conf.fontSize = parseInt(document.getElementById('font-size').value) || 24;
+        conf.letterSpacing = parseFloat(document.getElementById('letter-spacing').value) || 0;
+        conf.lineHeightRatio = parseInt(document.getElementById('line-height-ratio').value) || 150;
         conf.nameWidthRatio = parseInt(document.getElementById('name-width-ratio').value) || 8;
         conf.lineSpacing = parseInt(document.getElementById('line-spacing').value) || 40;
         
@@ -1311,6 +1321,59 @@
           return;
         }
 
+        if (d.type === 'image') {
+          item.className = 'flex items-start justify-between gap-3 p-3 rounded shadow-sm transition-all relative group ' +
+            (isSelected ? 'bg-amber-50 border-[1.5px] border-[#8b7355]' : 'bg-white border border-[#e8ded4] hover:border-[#8b7355]');
+
+          const imgWrapper = document.createElement('div');
+          imgWrapper.className = 'flex-grow pr-12 cursor-pointer flex items-center gap-3';
+          imgWrapper.onclick = () => toggleDialogueSelection(d.id);
+
+          const badge = document.createElement('span');
+          badge.className = 'inline-block text-[10px] font-bold px-2 py-0.5 rounded-full border bg-[#f3f4f6] text-[#6b7280] border-[#d1d5db] shrink-0';
+          badge.innerHTML = '<i class="fa-solid fa-image mr-1"></i>이미지';
+
+          const thumb = document.createElement('img');
+          thumb.src = d.src;
+          thumb.className = 'h-14 w-auto max-w-[100px] object-contain rounded border border-[#e8ded4] bg-[#fdfcfb] shrink-0';
+
+          const metaText = document.createElement('span');
+          metaText.className = 'text-[11px] text-gray-400';
+          const alignLabel = { left: '왼쪽', center: '가운데', right: '오른쪽' }[d.align] || '가운데';
+          metaText.innerText = `${alignLabel} · ${d.widthPercent || 60}%`;
+
+          imgWrapper.appendChild(badge);
+          imgWrapper.appendChild(thumb);
+          imgWrapper.appendChild(metaText);
+
+          const imgBtnArea = document.createElement('div');
+          imgBtnArea.className = 'absolute right-2 top-2 flex gap-1';
+
+          const imgUpBtn = document.createElement('button');
+          imgUpBtn.className = 'p-1 hover:bg-gray-100 rounded text-gray-500 text-xs transition-colors';
+          imgUpBtn.innerHTML = '<i class="fa-solid fa-chevron-up"></i>';
+          imgUpBtn.onclick = () => moveDialogue(idx, -1);
+
+          const imgDownBtn = document.createElement('button');
+          imgDownBtn.className = 'p-1 hover:bg-gray-100 rounded text-gray-500 text-xs transition-colors';
+          imgDownBtn.innerHTML = '<i class="fa-solid fa-chevron-down"></i>';
+          imgDownBtn.onclick = () => moveDialogue(idx, 1);
+
+          const imgDelBtn = document.createElement('button');
+          imgDelBtn.className = 'p-1 hover:bg-red-50 rounded text-red-600 text-xs transition-colors';
+          imgDelBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
+          imgDelBtn.onclick = () => deleteDialogue(d.id);
+
+          imgBtnArea.appendChild(imgUpBtn);
+          imgBtnArea.appendChild(imgDownBtn);
+          imgBtnArea.appendChild(imgDelBtn);
+
+          item.appendChild(imgWrapper);
+          item.appendChild(imgBtnArea);
+          container.appendChild(item);
+          return;
+        }
+
         item.className = 'flex items-start justify-between gap-3 p-3 rounded shadow-sm transition-all relative group ' +
           (isSelected ? 'bg-amber-50 border-[1.5px] border-[#8b7355]' : 'bg-white border border-[#e8ded4] hover:border-[#8b7355]');
 
@@ -1401,6 +1464,56 @@
       commitHistory();
       renderDialogueList();
       renderCanvas();
+    }
+
+    // --- IMAGE-AS-DIALOGUE INSERTION ---
+    function toggleImageInputPanel() {
+      const content = document.getElementById('image-input-panel-content');
+      const icon = document.getElementById('image-input-panel-icon');
+
+      if (content.classList.contains('hidden')) {
+        content.classList.remove('hidden');
+        content.classList.add('flex');
+        icon.classList.add('panel-open');
+      } else {
+        content.classList.add('hidden');
+        content.classList.remove('flex');
+        icon.classList.remove('panel-open');
+      }
+    }
+
+    // Reads the selected file, then inserts an image entry into the dialogue list at the
+    // currently selected position (or appended at the end), same convention as addPageBreak().
+    function handleDialogueImageUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const align = document.getElementById('dialogue-image-align').value;
+      const widthPercent = parseInt(document.getElementById('dialogue-image-width').value) || 60;
+
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const newImage = {
+          id: Date.now().toString() + '_img',
+          type: 'image',
+          src: event.target.result,
+          align: align,
+          widthPercent: widthPercent
+        };
+        const idx = selectedDialogueId ? state.dialogues.findIndex(d => d.id === selectedDialogueId) : -1;
+        if (idx !== -1) {
+          state.dialogues.splice(idx + 1, 0, newImage);
+        } else {
+          state.dialogues.push(newImage);
+        }
+        selectedDialogueId = null;
+
+        commitHistory();
+        renderDialogueList();
+        renderCanvas();
+      };
+      reader.readAsDataURL(file);
+      e.target.value = '';
     }
 
     // --- BATCH DIALOG INPUT ---
@@ -1730,7 +1843,7 @@
     // (i.e. it always carries a numeric `calculatedHeight`).
     function measureChatBubble(mctx, d, conf, charObj, printableWidth, bodyLinesOverride) {
       const fontSize = conf.fontSize;
-      const lineHeight = fontSize * 1.5;
+      const lineHeight = getLineHeight(conf);
       const avatarSize = Math.round(fontSize * 2.7);
       const avatarGap = Math.round(fontSize * 0.6);
       const bubblePadX = Math.round(fontSize * 0.7);
@@ -1960,7 +2073,7 @@
       let avatarImageMap = {};
       if (isChatFormat) {
         const neededNames = new Set();
-        dList.forEach(d => { if (d.type !== 'pagebreak' && d.char !== '나레이터') neededNames.add(d.char); });
+        dList.forEach(d => { if (!d.type && d.char !== '나레이터') neededNames.add(d.char); });
         const loadJobs = [];
         neededNames.forEach(name => {
           const charObj = state.characters.find(c => c.name === name);
@@ -1969,6 +2082,18 @@
           }
         });
         if (loadJobs.length > 0) await Promise.all(loadJobs);
+      }
+
+      // Load any inserted dialogue images (type: 'image')
+      let dialogueImageMap = {};
+      {
+        const imageJobs = [];
+        dList.forEach(d => {
+          if (d.type === 'image' && d.src) {
+            imageJobs.push(loadImage(d.src).then(img => { dialogueImageMap[d.id] = img; }));
+          }
+        });
+        if (imageJobs.length > 0) await Promise.all(imageJobs);
       }
 
       const cWidth = conf.width;
@@ -1984,6 +2109,8 @@
       const measurementCanvas = document.createElement('canvas');
       const mctx = measurementCanvas.getContext('2d');
       mctx.font = `${conf.fontSize}px ${conf.fontFamily}`;
+      applyLetterSpacing(mctx, conf);
+      const dialogueLineHeight = getLineHeight(conf);
 
       let pages = [];
       let currentPageLines = [];
@@ -1998,6 +2125,43 @@
             currentPageLines = [];
             currentHeight = 0;
           }
+          continue;
+        }
+
+        // --- INSERTED IMAGE ITEM (used instead of a dialogue line) ---
+        if (d.type === 'image') {
+          const img = dialogueImageMap[d.id];
+          const widthPct = (d.widthPercent || 60) / 100;
+          const drawWidth = Math.round(printableWidth * widthPct);
+          let drawHeight = drawWidth; // fallback square if the image failed to load
+          if (img && img.width > 0) {
+            drawHeight = Math.round(drawWidth * (img.height / img.width));
+          }
+          const imgItem = {
+            isImage: true, isNarrative: false,
+            img, drawWidth, drawHeight,
+            align: d.align || 'center',
+            calculatedHeight: drawHeight
+          };
+          const neededSpacing = currentPageLines.length > 0 ? conf.lineSpacing : 0;
+
+          if (currentHeight + neededSpacing + imgItem.calculatedHeight > printableHeight) {
+            if (currentPageLines.length > 0) {
+              pages.push(currentPageLines);
+              currentPageLines = [];
+              currentHeight = 0;
+            }
+          }
+          // If the image is still too tall for an empty page, shrink it to fit rather
+          // than splitting (images can't be split like text lines).
+          if (imgItem.calculatedHeight > printableHeight) {
+            const scale = printableHeight / imgItem.calculatedHeight;
+            imgItem.drawWidth = Math.round(imgItem.drawWidth * scale);
+            imgItem.drawHeight = Math.round(imgItem.drawHeight * scale);
+            imgItem.calculatedHeight = imgItem.drawHeight;
+          }
+          currentHeight += (currentPageLines.length > 0 ? conf.lineSpacing : 0) + imgItem.calculatedHeight;
+          currentPageLines.push(imgItem);
           continue;
         }
 
@@ -2034,8 +2198,8 @@
         const wrapWidth = isNarrative ? printableWidth : rightColWidth;
         const dialogueBodyLines = wrapText(mctx, d.text, wrapWidth, conf.fontSize, conf.fontFamily, conf.wrapMode);
 
-        const nameBlockHeight = isNarrative ? 0 : characterNameLines.length * (conf.fontSize * 1.5);
-        const textBlockHeight = dialogueBodyLines.length * (conf.fontSize * 1.5);
+        const nameBlockHeight = isNarrative ? 0 : characterNameLines.length * dialogueLineHeight;
+        const textBlockHeight = dialogueBodyLines.length * dialogueLineHeight;
         const itemHeight = Math.max(nameBlockHeight, textBlockHeight);
 
         const neededSpacing = currentPageLines.length > 0 ? conf.lineSpacing : 0;
@@ -2049,13 +2213,13 @@
           if (itemHeight > printableHeight) {
             let tempBodyLines = [...dialogueBodyLines];
             while (tempBodyLines.length > 0) {
-              const maxLinesOnFreshPage = Math.floor(printableHeight / (conf.fontSize * 1.5));
+              const maxLinesOnFreshPage = Math.floor(printableHeight / dialogueLineHeight);
               const sliceCount = Math.max(1, maxLinesOnFreshPage);
               const slice = tempBodyLines.splice(0, sliceCount);
               pages.push([{
                 char: d.char, isNarrative: isNarrative,
                 nameLines: currentPageLines.length === 0 ? characterNameLines : [],
-                bodyLines: slice, calculatedHeight: slice.length * (conf.fontSize * 1.5)
+                bodyLines: slice, calculatedHeight: slice.length * dialogueLineHeight
               }]);
             }
             continue; 
@@ -2135,7 +2299,8 @@
         pageCanvas.className = 'border-2 border-[#8b7355]/30 mb-2 bg-white';
 
         const ctx = pageCanvas.getContext('2d');
-        
+        applyLetterSpacing(ctx, conf);
+
         // Base Background Color
         ctx.fillStyle = conf.bgColor;
         ctx.fillRect(0, 0, cWidth, targetHeight);
@@ -2236,11 +2401,24 @@
             yPos += item.calculatedHeight;
             return;
           }
+
+          if (item.isImage) {
+            if (item.img) {
+              let ix = padL;
+              if (item.align === 'center') ix = padL + (printableWidth - item.drawWidth) / 2;
+              else if (item.align === 'right') ix = padL + printableWidth - item.drawWidth;
+              ctx.save();
+              ctx.drawImage(item.img, ix, yPos, item.drawWidth, item.drawHeight);
+              ctx.restore();
+            }
+            yPos += item.calculatedHeight;
+            return;
+          }
           
           ctx.save();
           ctx.font = `${conf.fontSize}px ${conf.fontFamily}`;
           ctx.fillStyle = conf.fgColor;
-          const fontHeight = conf.fontSize * 1.5;
+          const fontHeight = dialogueLineHeight;
 
           if (item.isNarrative) {
             ctx.fillStyle = adjustColorOpacity(conf.fgColor, 0.85);
@@ -2331,6 +2509,21 @@
           ctx.fillText(c, curX, y);
           curX += charWidths[i] + gap;
         });
+      }
+    }
+
+    // Returns the actual line-height in px for a given config (font size * user-adjustable ratio)
+    function getLineHeight(conf) {
+      const ratio = (conf.lineHeightRatio || 150) / 100;
+      return conf.fontSize * ratio;
+    }
+
+    // Applies canvas letter-spacing (px). Uses the standard CanvasRenderingContext2D.letterSpacing
+    // property (widely supported); on very old browsers without it, this is a silent no-op and
+    // text simply renders with default (0) spacing.
+    function applyLetterSpacing(ctx, conf) {
+      if ('letterSpacing' in ctx) {
+        ctx.letterSpacing = `${conf.letterSpacing || 0}px`;
       }
     }
 
@@ -2466,7 +2659,7 @@
         ];
         selectedDialogueId = null;
         state.config = {
-          width: 1080, height: 1080, fontFamily: "'Gowun Batang', serif", fontSize: 24, nameWidthRatio: 8, lineSpacing: 40,
+          width: 1080, height: 1080, fontFamily: "'Gowun Batang', serif", fontSize: 24, letterSpacing: 0, lineHeightRatio: 150, nameWidthRatio: 8, lineSpacing: 40,
           bgColor: '#f5f2eb', fgColor: '#2c221e', paperTexture: 'pulp', pageFooterEnabled: false, footerPosition: 'bottom-left',
           footerMode: 'unified', footerUnifiedText: '— 헤무대본 제 1장 —', pageTexts: [], autoCrop: false, centerMode: false, bgImage: null, bgOpacity: 50, bgBlur: 0,
           wrapMode: 'char', narratorAlign: 'left', characterAlign: 'left', dialogueFormat: 'plain'

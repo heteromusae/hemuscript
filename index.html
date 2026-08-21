@@ -122,6 +122,40 @@
         </div>
       </div>
 
+      <!-- Add Image Input (Toggleable) - insert an image into the dialogue list instead of a line -->
+      <div class="retro-panel p-5 rounded-lg flex flex-col gap-2">
+
+        <h2 class="font-bold text-base flex justify-between items-center w-full cursor-pointer select-none" onclick="toggleImageInputPanel()">
+          <span class="flex items-center gap-2"><i class="fa-solid fa-image text-[#8b7355]"></i> 이미지 추가</span>
+          <i id="image-input-panel-icon" class="fa-solid fa-chevron-down text-gray-500 text-sm transition-transform"></i>
+        </h2>
+
+        <!-- Accordion Content -->
+        <div id="image-input-panel-content" class="hidden flex-col gap-3 mt-1 pt-2 border-t border-[#e8ded4]">
+          <p class="text-[11px] text-gray-500 leading-relaxed">대사 대신 이미지를 목록에 끼워넣을 수 있어요. 삽화, 사진, 스티커 등을 자유롭게 배치해 보세요.</p>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1">정렬</label>
+              <select id="dialogue-image-align" class="retro-input px-2 py-1.5 text-xs rounded w-full">
+                <option value="left">왼쪽</option>
+                <option value="center" selected>가운데</option>
+                <option value="right">오른쪽</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1 flex justify-between"><span>크기</span> <span id="dialogue-image-width-val">60%</span></label>
+              <input type="range" id="dialogue-image-width" min="20" max="100" step="5" value="60" oninput="document.getElementById('dialogue-image-width-val').innerText = this.value + '%'" class="w-full accent-[#8b7355] mt-1">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">이미지 파일 선택</label>
+            <input type="file" id="dialogue-image-upload" accept="image/*" onchange="handleDialogueImageUpload(event)" class="retro-input px-2 py-1 text-[11px] rounded w-full">
+          </div>
+        </div>
+      </div>
+
       <!-- Batch Dialog Input (Toggleable) -->
       <div class="retro-panel p-5 rounded-lg flex flex-col gap-2">
 
@@ -248,6 +282,18 @@
             <div>
               <label class="block text-xs font-semibold text-gray-600 mb-1 flex justify-between"><span>서체 크기</span> <span id="font-size-val">24px</span></label>
               <input type="range" id="font-size" min="14" max="42" value="24" oninput="document.getElementById('font-size-val').innerText = this.value + 'px'; updateConfigState(); renderCanvas();" onchange="commitHistory();" class="w-full accent-[#8b7355] mt-1">
+            </div>
+          </div>
+
+          <!-- Letter Spacing & Line Height -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1 flex justify-between"><span>자간</span> <span id="letter-spacing-val">0px</span></label>
+              <input type="range" id="letter-spacing" min="-4" max="16" step="0.5" value="0" oninput="document.getElementById('letter-spacing-val').innerText = this.value + 'px'; updateConfigState(); renderCanvas();" onchange="commitHistory();" class="w-full accent-[#8b7355] mt-1">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1 flex justify-between"><span>행간</span> <span id="line-height-ratio-val">150%</span></label>
+              <input type="range" id="line-height-ratio" min="100" max="220" step="5" value="150" oninput="document.getElementById('line-height-ratio-val').innerText = this.value + '%'; updateConfigState(); renderCanvas();" onchange="commitHistory();" class="w-full accent-[#8b7355] mt-1">
             </div>
           </div>
 
