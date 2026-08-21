@@ -678,6 +678,37 @@
     </div>
   </div>
 
+  <!-- Dialogue Image Crop Modal (image inserted into the dialogue list, free aspect ratio by default) -->
+  <div id="dialogue-image-crop-modal" class="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center hidden p-4">
+    <div class="retro-panel p-4 rounded-lg w-full max-w-2xl flex flex-col gap-4">
+      <h3 class="font-bold text-lg text-[#5c4a37] border-b border-[#e8ded4] pb-2 flex items-center gap-2">
+        <i class="fa-solid fa-crop-simple"></i> 삽입 이미지 편집
+      </h3>
+      <p class="text-xs text-gray-500">목록에 끼워넣을 영역을 원하는 비율로 잘라주세요.</p>
+
+      <div class="flex flex-wrap items-center gap-1.5">
+        <button type="button" onclick="setDialogueImageCropRatio(this, null)" class="retro-btn retro-btn-accent px-2.5 py-1 text-[11px] rounded dialogue-crop-ratio-btn" data-ratio="free">자유</button>
+        <button type="button" onclick="setDialogueImageCropRatio(this, 1)" class="retro-btn px-2.5 py-1 text-[11px] rounded dialogue-crop-ratio-btn" data-ratio="1">1:1</button>
+        <button type="button" onclick="setDialogueImageCropRatio(this, 4/3)" class="retro-btn px-2.5 py-1 text-[11px] rounded dialogue-crop-ratio-btn" data-ratio="4:3">4:3</button>
+        <button type="button" onclick="setDialogueImageCropRatio(this, 16/9)" class="retro-btn px-2.5 py-1 text-[11px] rounded dialogue-crop-ratio-btn" data-ratio="16:9">16:9</button>
+        <button type="button" onclick="setDialogueImageCropRatio(this, 3/4)" class="retro-btn px-2.5 py-1 text-[11px] rounded dialogue-crop-ratio-btn" data-ratio="3:4">3:4</button>
+        <span class="flex items-center gap-1.5 ml-auto">
+          <button type="button" onclick="rotateDialogueImageCrop(-90)" class="retro-btn px-2.5 py-1.5 text-xs rounded" title="왼쪽으로 회전"><i class="fa-solid fa-rotate-left"></i></button>
+          <button type="button" onclick="rotateDialogueImageCrop(90)" class="retro-btn px-2.5 py-1.5 text-xs rounded" title="오른쪽으로 회전"><i class="fa-solid fa-rotate-right"></i></button>
+        </span>
+      </div>
+
+      <div class="img-container rounded overflow-hidden relative">
+        <img id="dialogue-image-crop-image" src="" alt="Picture">
+      </div>
+
+      <div class="flex justify-end gap-2 mt-2">
+        <button onclick="closeDialogueImageCropModal()" class="retro-btn px-4 py-2 text-sm rounded">취소</button>
+        <button onclick="applyDialogueImageCrop()" class="retro-btn px-6 py-2 text-sm rounded font-bold retro-btn-accent">적용하기</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Template Save/Edit Modal -->
   <div id="template-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
     <div class="retro-panel p-6 rounded-lg w-full max-w-sm flex flex-col gap-4 text-center">

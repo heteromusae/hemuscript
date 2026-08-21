@@ -1467,6 +1467,8 @@
     }
 
     // --- IMAGE-AS-DIALOGUE INSERTION ---
+    let dialogueImageCropperInstance = null;
+
     function toggleImageInputPanel() {
       const content = document.getElementById('image-input-panel-content');
       const icon = document.getElementById('image-input-panel-icon');
@@ -1482,21 +1484,91 @@
       }
     }
 
-    // Reads the selected file, then inserts an image entry into the dialogue list at the
-    // currently selected position (or appended at the end), same convention as addPageBreak().
+    // Reads the selected file, then opens a crop popup so the user can trim the image
+    // before it's inserted into the dialogue list. The actual insertion happens in
+    // applyDialogueImageCrop() once the user confirms the crop.
     function handleDialogueImageUpload(e) {
       const file = e.target.files[0];
       if (!file) return;
 
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const imageElement = document.getElementById('dialogue-image-crop-image');
+        imageElement.src = event.target.result;
+        document.getElementById('dialogue-image-crop-modal').classList.remove('hidden');
+
+        if (dialogueImageCropperInstance) {
+          dialogueImageCropperInstance.destroy();
+        }
+
+        // Reset the ratio button highlight back to "자유" (free) each time the popup opens
+        document.querySelectorAll('.dialogue-crop-ratio-btn').forEach(btn => {
+          btn.classList.toggle('retro-btn-accent', btn.dataset.ratio === 'free');
+        });
+
+        dialogueImageCropperInstance = new Cropper(imageElement, {
+          aspectRatio: NaN, // free-form crop by default; user can pick a preset ratio above
+          viewMode: 1,
+          autoCropArea: 1,
+          background: false,
+        });
+      };
+      reader.readAsDataURL(file);
+      e.target.value = '';
+    }
+
+    // Switches the crop box to a fixed ratio (or free-form when ratio is null) and
+    // highlights the corresponding preset button.
+    function setDialogueImageCropRatio(btn, ratio) {
+      if (!dialogueImageCropperInstance) return;
+      dialogueImageCropperInstance.setAspectRatio(ratio === null ? NaN : ratio);
+      document.querySelectorAll('.dialogue-crop-ratio-btn').forEach(b => b.classList.remove('retro-btn-accent'));
+      btn.classList.add('retro-btn-accent');
+    }
+
+    function rotateDialogueImageCrop(deg) {
+      if (!dialogueImageCropperInstance) return;
+      dialogueImageCropperInstance.rotate(deg);
+    }
+
+    function closeDialogueImageCropModal() {
+      document.getElementById('dialogue-image-crop-modal').classList.add('hidden');
+      if (dialogueImageCropperInstance) {
+        dialogueImageCropperInstance.destroy();
+        dialogueImageCropperInstance = null;
+      }
+    }
+
+    // Confirms the crop, then inserts an image entry into the dialogue list at the
+    // currently selected position (or appended at the end), same convention as addPageBreak().
+    function applyDialogueImageCrop() {
+      if (!dialogueImageCropperInstance) return;
+
       const align = document.getElementById('dialogue-image-align').value;
       const widthPercent = parseInt(document.getElementById('dialogue-image-width').value) || 60;
 
-      const reader = new FileReader();
-      reader.onload = function(event) {
+      // Cap the exported size so large photos don't bloat the saved project as base64.
+      const cropBoxData = dialogueImageCropperInstance.getData();
+      const maxDim = 1600;
+      let exportWidth = Math.round(cropBoxData.width);
+      let exportHeight = Math.round(cropBoxData.height);
+      if (exportWidth > maxDim || exportHeight > maxDim) {
+        const scale = maxDim / Math.max(exportWidth, exportHeight);
+        exportWidth = Math.round(exportWidth * scale);
+        exportHeight = Math.round(exportHeight * scale);
+      }
+
+      const canvas = dialogueImageCropperInstance.getCroppedCanvas({
+        width: exportWidth,
+        height: exportHeight,
+        imageSmoothingQuality: 'high',
+      });
+
+      if (canvas) {
         const newImage = {
           id: Date.now().toString() + '_img',
           type: 'image',
-          src: event.target.result,
+          src: canvas.toDataURL('image/png'),
           align: align,
           widthPercent: widthPercent
         };
@@ -1511,9 +1583,8 @@
         commitHistory();
         renderDialogueList();
         renderCanvas();
-      };
-      reader.readAsDataURL(file);
-      e.target.value = '';
+      }
+      closeDialogueImageCropModal();
     }
 
     // --- BATCH DIALOG INPUT ---
