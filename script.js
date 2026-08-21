@@ -1331,7 +1331,7 @@
 
           const badge = document.createElement('span');
           badge.className = 'inline-block text-[10px] font-bold px-2 py-0.5 rounded-full border bg-[#f3f4f6] text-[#6b7280] border-[#d1d5db] shrink-0';
-          badge.innerHTML = '<i class="fa-solid fa-image mr-1"></i>이미지';
+          badge.innerHTML = '<i class="fa-solid fa-image mr-1"></i>';
 
           const thumb = document.createElement('img');
           thumb.src = d.src;
