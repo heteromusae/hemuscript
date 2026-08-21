@@ -1359,6 +1359,11 @@
           imgDownBtn.innerHTML = '<i class="fa-solid fa-chevron-down"></i>';
           imgDownBtn.onclick = () => moveDialogue(idx, 1);
 
+          const imgEditBtn = document.createElement('button');
+          imgEditBtn.className = 'p-1 hover:bg-amber-50 rounded text-amber-700 text-xs transition-colors';
+          imgEditBtn.innerHTML = '<i class="fa-solid fa-pen"></i>';
+          imgEditBtn.onclick = () => openImageEditModal(d.id);
+
           const imgDelBtn = document.createElement('button');
           imgDelBtn.className = 'p-1 hover:bg-red-50 rounded text-red-600 text-xs transition-colors';
           imgDelBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
@@ -1366,6 +1371,7 @@
 
           imgBtnArea.appendChild(imgUpBtn);
           imgBtnArea.appendChild(imgDownBtn);
+          imgBtnArea.appendChild(imgEditBtn);
           imgBtnArea.appendChild(imgDelBtn);
 
           item.appendChild(imgWrapper);
@@ -1468,6 +1474,7 @@
 
     // --- IMAGE-AS-DIALOGUE INSERTION ---
     let dialogueImageCropperInstance = null;
+    let dialogueImageCropMode = 'insert'; // 'insert' = new image from file picker, 'recrop' = re-cropping an existing list item
 
     function toggleImageInputPanel() {
       const content = document.getElementById('image-input-panel-content');
@@ -1493,28 +1500,36 @@
 
       const reader = new FileReader();
       reader.onload = function(event) {
-        const imageElement = document.getElementById('dialogue-image-crop-image');
-        imageElement.src = event.target.result;
-        document.getElementById('dialogue-image-crop-modal').classList.remove('hidden');
-
-        if (dialogueImageCropperInstance) {
-          dialogueImageCropperInstance.destroy();
-        }
-
-        // Reset the ratio button highlight back to "자유" (free) each time the popup opens
-        document.querySelectorAll('.dialogue-crop-ratio-btn').forEach(btn => {
-          btn.classList.toggle('retro-btn-accent', btn.dataset.ratio === 'free');
-        });
-
-        dialogueImageCropperInstance = new Cropper(imageElement, {
-          aspectRatio: NaN, // free-form crop by default; user can pick a preset ratio above
-          viewMode: 1,
-          autoCropArea: 1,
-          background: false,
-        });
+        dialogueImageCropMode = 'insert';
+        openDialogueImageCropModalWithSrc(event.target.result);
       };
       reader.readAsDataURL(file);
       e.target.value = '';
+    }
+
+    // Shared setup for the dialogue-image crop popup: loads the given image source into
+    // the cropper and resets the ratio/rotation UI. Used both for inserting a brand-new
+    // image and for re-cropping an image that's already in the dialogue list.
+    function openDialogueImageCropModalWithSrc(src) {
+      const imageElement = document.getElementById('dialogue-image-crop-image');
+      imageElement.src = src;
+      document.getElementById('dialogue-image-crop-modal').classList.remove('hidden');
+
+      if (dialogueImageCropperInstance) {
+        dialogueImageCropperInstance.destroy();
+      }
+
+      // Reset the ratio button highlight back to "자유" (free) each time the popup opens
+      document.querySelectorAll('.dialogue-crop-ratio-btn').forEach(btn => {
+        btn.classList.toggle('retro-btn-accent', btn.dataset.ratio === 'free');
+      });
+
+      dialogueImageCropperInstance = new Cropper(imageElement, {
+        aspectRatio: NaN, // free-form crop by default; user can pick a preset ratio above
+        viewMode: 1,
+        autoCropArea: 1,
+        background: false,
+      });
     }
 
     // Switches the crop box to a fixed ratio (or free-form when ratio is null) and
@@ -1539,13 +1554,12 @@
       }
     }
 
-    // Confirms the crop, then inserts an image entry into the dialogue list at the
-    // currently selected position (or appended at the end), same convention as addPageBreak().
+    // Confirms the crop. In 'insert' mode this inserts a new image entry into the dialogue
+    // list (at the currently selected position, or appended at the end — same convention
+    // as addPageBreak()). In 'recrop' mode it just updates the working draft used by the
+    // image edit modal, without touching state.dialogues until that modal is saved.
     function applyDialogueImageCrop() {
       if (!dialogueImageCropperInstance) return;
-
-      const align = document.getElementById('dialogue-image-align').value;
-      const widthPercent = parseInt(document.getElementById('dialogue-image-width').value) || 60;
 
       // Cap the exported size so large photos don't bloat the saved project as base64.
       const cropBoxData = dialogueImageCropperInstance.getData();
@@ -1565,26 +1579,85 @@
       });
 
       if (canvas) {
-        const newImage = {
-          id: Date.now().toString() + '_img',
-          type: 'image',
-          src: canvas.toDataURL('image/png'),
-          align: align,
-          widthPercent: widthPercent
-        };
-        const idx = selectedDialogueId ? state.dialogues.findIndex(d => d.id === selectedDialogueId) : -1;
-        if (idx !== -1) {
-          state.dialogues.splice(idx + 1, 0, newImage);
-        } else {
-          state.dialogues.push(newImage);
-        }
-        selectedDialogueId = null;
+        const dataUrl = canvas.toDataURL('image/png');
 
+        if (dialogueImageCropMode === 'recrop') {
+          imageEditDraftSrc = dataUrl;
+          const preview = document.getElementById('image-edit-preview');
+          if (preview) preview.src = dataUrl;
+        } else {
+          const align = document.getElementById('dialogue-image-align').value;
+          const widthPercent = parseInt(document.getElementById('dialogue-image-width').value) || 60;
+          const newImage = {
+            id: Date.now().toString() + '_img',
+            type: 'image',
+            src: dataUrl,
+            align: align,
+            widthPercent: widthPercent
+          };
+          const idx = selectedDialogueId ? state.dialogues.findIndex(d => d.id === selectedDialogueId) : -1;
+          if (idx !== -1) {
+            state.dialogues.splice(idx + 1, 0, newImage);
+          } else {
+            state.dialogues.push(newImage);
+          }
+          selectedDialogueId = null;
+
+          commitHistory();
+          renderDialogueList();
+          renderCanvas();
+        }
+      }
+      closeDialogueImageCropModal();
+    }
+
+    // --- IMAGE ITEM EDIT (existing image entries: reposition, resize, or re-crop) ---
+    let imageEditDraftId = null;
+    let imageEditDraftSrc = null;
+
+    function openImageEditModal(id) {
+      const d = state.dialogues.find(item => item.id === id);
+      if (!d || d.type !== 'image') return;
+
+      imageEditDraftId = id;
+      imageEditDraftSrc = d.src;
+
+      document.getElementById('image-edit-preview').src = d.src;
+      document.getElementById('image-edit-align').value = d.align || 'center';
+      const widthVal = d.widthPercent || 60;
+      document.getElementById('image-edit-width').value = widthVal;
+      document.getElementById('image-edit-width-val').innerText = widthVal + '%';
+
+      document.getElementById('image-edit-modal').classList.remove('hidden');
+    }
+
+    function closeImageEditModal() {
+      document.getElementById('image-edit-modal').classList.add('hidden');
+      imageEditDraftId = null;
+      imageEditDraftSrc = null;
+    }
+
+    // Opens the same crop popup used for inserting new images, but pre-loaded with the
+    // current draft image and in 'recrop' mode so confirming it updates the draft instead
+    // of inserting a new dialogue entry.
+    function openRecropForEdit() {
+      if (!imageEditDraftSrc) return;
+      dialogueImageCropMode = 'recrop';
+      openDialogueImageCropModalWithSrc(imageEditDraftSrc);
+    }
+
+    function saveImageEditModal() {
+      if (!imageEditDraftId) return;
+      const d = state.dialogues.find(item => item.id === imageEditDraftId);
+      if (d) {
+        d.align = document.getElementById('image-edit-align').value;
+        d.widthPercent = parseInt(document.getElementById('image-edit-width').value) || 60;
+        d.src = imageEditDraftSrc;
         commitHistory();
         renderDialogueList();
         renderCanvas();
       }
-      closeDialogueImageCropModal();
+      closeImageEditModal();
     }
 
     // --- BATCH DIALOG INPUT ---
