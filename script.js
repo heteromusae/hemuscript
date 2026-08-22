@@ -29,6 +29,9 @@
         lineHeightRatio: 150,
         nameWidthRatio: 8,
         lineSpacing: 40,
+        // Separate (smaller) spacing used between consecutive chat bubbles from the
+        // same speaker (chat format only) -- independent of the general 대사 간격 above.
+        chatConsecutiveSpacing: 12,
         bgColor: '#f5f2eb',
         fgColor: '#2c221e',
         paperTexture: 'pulp',
@@ -62,6 +65,9 @@
         shortcuts: c.shortcuts ? c.shortcuts.slice() : (c.shortcut ? [c.shortcut] : []),
         profileImage: c.profileImage || null,
         profileImageEnabled: c.profileImageEnabled === undefined ? false : !!c.profileImageEnabled,
+        // Whether the character's name label is shown in chat-bubble format. Independent
+        // of profileImageEnabled -- both can be turned on/off at the same time.
+        nameEnabled: c.nameEnabled === undefined ? true : !!c.nameEnabled,
         align: c.align === 'right' ? 'right' : 'left',
         bubbleColor: c.bubbleColor || info.bg,
         textColor: c.textColor || '#2c221e',
@@ -216,6 +222,7 @@
             if(state.config.narratorAlign === undefined) state.config.narratorAlign = 'left';
             if(state.config.characterAlign === undefined) state.config.characterAlign = 'left';
             if(state.config.dialogueFormat === undefined) state.config.dialogueFormat = 'plain';
+            if(state.config.chatConsecutiveSpacing === undefined) state.config.chatConsecutiveSpacing = 12;
             if(state.characters) state.characters = state.characters.map(normalizeCharacter);
             if(state.templates) state.templates.forEach(t => {
               if (t.characters) t.characters = t.characters.map(normalizeCharacter);
@@ -498,6 +505,8 @@
       document.getElementById('name-width-val').innerText = conf.nameWidthRatio + '%';
       document.getElementById('line-spacing').value = conf.lineSpacing;
       document.getElementById('line-spacing-val').innerText = conf.lineSpacing + 'px';
+      document.getElementById('chat-consecutive-spacing').value = conf.chatConsecutiveSpacing;
+      document.getElementById('chat-consecutive-spacing-val').innerText = conf.chatConsecutiveSpacing + 'px';
       
       if(bgPickr) bgPickr.setColor(conf.bgColor);
       if(fgPickr) fgPickr.setColor(conf.fgColor);
@@ -524,6 +533,7 @@
       document.getElementById('narrator-align').value = conf.narratorAlign;
       document.getElementById('character-align').value = conf.characterAlign;
       document.getElementById('dialogue-format').value = conf.dialogueFormat || 'plain';
+      toggleChatOnlyControls();
 
       if (conf.bgImage) {
         document.getElementById('btn-clear-bg').classList.remove('hidden');
@@ -545,6 +555,7 @@
         conf.lineHeightRatio = parseInt(document.getElementById('line-height-ratio').value) || 150;
         conf.nameWidthRatio = parseInt(document.getElementById('name-width-ratio').value) || 8;
         conf.lineSpacing = parseInt(document.getElementById('line-spacing').value) || 40;
+        conf.chatConsecutiveSpacing = parseInt(document.getElementById('chat-consecutive-spacing').value) || 0;
         
         const selectedTex = document.querySelector('input[name="paper-texture"]:checked');
         conf.paperTexture = selectedTex ? selectedTex.value : 'none';
@@ -582,6 +593,13 @@
             }
         }
       });
+    }
+
+    // Shows/hides style controls that only make sense in chat (말풍선) format.
+    function toggleChatOnlyControls() {
+      const isChatFormat = document.getElementById('dialogue-format').value === 'chat';
+      const wrapper = document.getElementById('chat-consecutive-spacing-wrapper');
+      if (wrapper) wrapper.classList.toggle('hidden', !isChatFormat);
     }
 
     function toggleFooterMode() {
@@ -773,6 +791,7 @@
             return;
           }
           if (parsed.config && parsed.config.dialogueFormat === undefined) parsed.config.dialogueFormat = 'plain';
+          if (parsed.config && parsed.config.chatConsecutiveSpacing === undefined) parsed.config.chatConsecutiveSpacing = 12;
           const newTemplate = {
             id: Date.now().toString(),
             name: parsed.name || '가져온 템플릿',
@@ -1151,12 +1170,19 @@
       charProfileDraft.profileImageEnabled = document.getElementById('char-profile-image-toggle').checked;
     }
 
+    // Name label toggle -- independent of profileImageEnabled; both can be on/off at once.
+    function handleCharNameToggle() {
+      if (!charProfileDraft) return;
+      charProfileDraft.nameEnabled = document.getElementById('char-name-toggle').checked;
+    }
+
     function openCharProfileModal(idx) {
       charProfileEditIdx = idx;
       const charObj = state.characters[idx];
       charProfileDraft = JSON.parse(JSON.stringify(normalizeCharacter(charObj)));
 
       document.getElementById('char-profile-modal-title').innerText = `"${charObj.name}" 프로필 설정`;
+      document.getElementById('char-name-toggle').checked = charProfileDraft.nameEnabled;
       document.getElementById('char-profile-image-toggle').checked = charProfileDraft.profileImageEnabled;
       updateCharProfileImagePreview();
 
@@ -1188,6 +1214,7 @@
       if (target) {
         target.profileImage = charProfileDraft.profileImage;
         target.profileImageEnabled = charProfileDraft.profileImageEnabled;
+        target.nameEnabled = charProfileDraft.nameEnabled;
         target.align = charProfileDraft.align;
         target.bubbleColor = charProfileDraft.bubbleColor;
         target.textColor = charProfileDraft.textColor;
@@ -2019,6 +2046,10 @@
       // profile picture, if enabled) is hidden by default on the repeat messages
       // -- unless the user explicitly overrides this per-message (showNameOverride).
       const showNameAvatar = !suppressNameAvatar;
+      // Name label and profile picture are independent per-character toggles -- both
+      // can be enabled/disabled at the same time. Each is still subject to the
+      // "hide on consecutive same speaker" rule above (showNameAvatar).
+      const nameShown = showNameAvatar && !!(charObj ? charObj.nameEnabled !== false : true);
       const avatarEnabled = showNameAvatar && !!(charObj && charObj.profileImageEnabled && charObj.profileImage);
 
       const maxBubbleOuterWidth = Math.round(printableWidth * 0.72);
@@ -2038,7 +2069,7 @@
 
       mctx.font = `bold ${nameFontSize}px ${conf.fontFamily}`;
       const nameLineHeight = Math.round(nameFontSize * 1.3);
-      const nameBlockHeight = showNameAvatar ? (nameLineHeight + nameGap) : 0;
+      const nameBlockHeight = nameShown ? (nameLineHeight + nameGap) : 0;
 
       const contentHeight = nameBlockHeight + bubbleHeight;
       const totalHeight = avatarEnabled ? Math.max(contentHeight, avatarSize) : contentHeight;
@@ -2049,7 +2080,7 @@
         char: d.char,
         align, avatarEnabled,
         avatarImg: null, // filled in by caller (needs preloaded image map)
-        bodyLines, nameLines: showNameAvatar ? [d.char] : [],
+        bodyLines, nameLines: nameShown ? [d.char] : [],
         fontSize, lineHeight, avatarSize, avatarGap, bubblePadX, bubblePadY,
         nameFontSize, nameGap, nameLineHeight,
         bubbleWidth, bubbleHeight,
@@ -2208,11 +2239,22 @@
       ctx.closePath();
     }
 
+    // Returns the spacing to place *before* this item (i.e. the gap between it and the
+    // previous item on the same page). Chat-bubble items from a speaker who is speaking
+    // 2+ times in a row use the separate (usually smaller) chatConsecutiveSpacing value
+    // instead of the general 대사 간격 (lineSpacing) -- independent settings.
+    function getSpacingBeforeItem(item, conf) {
+      if (item && item.isChatBubble && item.isConsecutiveSameSpeaker) {
+        return conf.chatConsecutiveSpacing;
+      }
+      return conf.lineSpacing;
+    }
+
     // Sums item heights + inter-item spacing for a page's dialogue block (used by 중앙부터 입력 mode)
-    function computeDialogueBlockHeight(pageData, lineSpacing) {
+    function computeDialogueBlockHeight(pageData, conf) {
       let h = 0;
       pageData.forEach((item, idx) => {
-        if (idx > 0) h += lineSpacing;
+        if (idx > 0) h += getSpacingBeforeItem(item, conf);
         h += item.calculatedHeight;
       });
       return h;
@@ -2354,13 +2396,18 @@
           const isConsecutiveSameSpeaker = prevChatSpeaker === d.char;
           const suppressNameAvatar = isConsecutiveSameSpeaker && !d.showNameOverride;
           const item = measureChatBubble(mctx, d, conf, charObj, printableWidth, null, suppressNameAvatar);
-          const neededSpacing = currentPageLines.length > 0 ? conf.lineSpacing : 0;
+          // Mark so both pagination and drawing use the smaller "연속 간격" instead of
+          // the general 대사 간격 when this bubble immediately follows the same speaker
+          // on the same page (a fresh page/pagebreak always resets to the normal gap).
+          item.isConsecutiveSameSpeaker = isConsecutiveSameSpeaker && currentPageLines.length > 0;
+          const neededSpacing = currentPageLines.length > 0 ? getSpacingBeforeItem(item, conf) : 0;
 
           if (currentHeight + neededSpacing + item.calculatedHeight > printableHeight) {
             if (currentPageLines.length > 0) {
               pages.push(currentPageLines);
               currentPageLines = [];
               currentHeight = 0;
+              item.isConsecutiveSameSpeaker = false;
             }
             if (item.calculatedHeight > printableHeight) {
               const splitItems = splitChatBubbleForPages(mctx, d, conf, charObj, printableWidth, printableHeight, item.bodyLines, suppressNameAvatar);
@@ -2369,7 +2416,7 @@
               continue;
             }
           }
-          currentHeight += neededSpacing + item.calculatedHeight;
+          currentHeight += (currentPageLines.length > 0 ? getSpacingBeforeItem(item, conf) : 0) + item.calculatedHeight;
           prevChatSpeaker = d.char;
           currentPageLines.push(item);
           continue;
@@ -2440,7 +2487,7 @@
         if (conf.autoCrop && !conf.centerMode && pageIdx === pages.length - 1) {
           let yPos = padT;
           pageData.forEach((item, itemIdx) => {
-            if (itemIdx > 0) yPos += conf.lineSpacing;
+            if (itemIdx > 0) yPos += getSpacingBeforeItem(item, conf);
             yPos += item.calculatedHeight;
           });
           
@@ -2462,7 +2509,7 @@
         let centerDialogueStartY = padT;
         let centerFooterY = 0;
         if (conf.centerMode) {
-          const dialogueBlockHeight = computeDialogueBlockHeight(pageData, conf.lineSpacing);
+          const dialogueBlockHeight = computeDialogueBlockHeight(pageData, conf);
           const footerBlockHeight = conf.pageFooterEnabled ? (footerFontSizeCalc + footerGap) : 0;
           const totalBlockHeight = dialogueBlockHeight + footerBlockHeight;
           const blockTop = (targetHeight - totalBlockHeight) / 2;
@@ -2580,7 +2627,7 @@
         // Draw Dialogue Elements
         let yPos = conf.centerMode ? centerDialogueStartY : padT;
         pageData.forEach((item, itemIdx) => {
-          if (itemIdx > 0) yPos += conf.lineSpacing;
+          if (itemIdx > 0) yPos += getSpacingBeforeItem(item, conf);
 
           if (item.isChatBubble) {
             ctx.save();
@@ -2849,6 +2896,7 @@
         selectedDialogueId = null;
         state.config = {
           width: 1080, height: 1080, fontFamily: "'Gowun Batang', serif", fontSize: 24, letterSpacing: 0, lineHeightRatio: 150, nameWidthRatio: 8, lineSpacing: 40,
+          chatConsecutiveSpacing: 12,
           bgColor: '#f5f2eb', fgColor: '#2c221e', paperTexture: 'pulp', pageFooterEnabled: false, footerPosition: 'bottom-left',
           footerMode: 'unified', footerUnifiedText: '— 헤무대본 제 1장 —', pageTexts: [], autoCrop: false, centerMode: false, bgImage: null, bgOpacity: 50, bgBlur: 0,
           wrapMode: 'char', narratorAlign: 'left', characterAlign: 'left', dialogueFormat: 'plain'
