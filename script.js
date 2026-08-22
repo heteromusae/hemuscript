@@ -1920,7 +1920,26 @@
         modalCharSelect.appendChild(opt);
       });
       document.getElementById('modal-dialog-text').value = d.text;
+
+      document.getElementById('modal-show-name-toggle').checked = !!d.showNameOverride;
+      updateModalShowNameVisibility();
+
       document.getElementById('edit-modal').classList.remove('hidden');
+    }
+    // "이름(및 사진) 보이기" override only makes sense for chat-format character
+    // lines (narrator lines and plain format never hide the name in the first place).
+    // Re-checked whenever the modal's speaker dropdown changes, since switching to/from
+    // 나레이터 should show/hide this toggle live.
+    function updateModalShowNameVisibility() {
+      const showNameWrapper = document.getElementById('modal-show-name-wrapper');
+      const isChatFormat = state.config.dialogueFormat === 'chat';
+      const selectedChar = document.getElementById('modal-char-select').value;
+      const isNarrator = selectedChar === '나레이터';
+      if (isChatFormat && !isNarrator) {
+        showNameWrapper.classList.remove('hidden');
+      } else {
+        showNameWrapper.classList.add('hidden');
+      }
     }
     function closeEditModal() { document.getElementById('edit-modal').classList.add('hidden'); activeEditId = null; }
     function saveEditModal() {
@@ -1929,6 +1948,7 @@
       if (d) {
         d.char = document.getElementById('modal-char-select').value;
         d.text = document.getElementById('modal-dialog-text').value.trim();
+        d.showNameOverride = document.getElementById('modal-show-name-toggle').checked;
         commitHistory();
         renderDialogueList();
         renderCanvas();
@@ -1985,7 +2005,7 @@
     // chat message bubble for a given dialogue entry. Returns an item compatible with
     // the same pageData/pagination flow used by the plain dialogue format
     // (i.e. it always carries a numeric `calculatedHeight`).
-    function measureChatBubble(mctx, d, conf, charObj, printableWidth, bodyLinesOverride) {
+    function measureChatBubble(mctx, d, conf, charObj, printableWidth, bodyLinesOverride, suppressNameAvatar) {
       const fontSize = conf.fontSize;
       const lineHeight = getLineHeight(conf);
       const avatarSize = Math.round(fontSize * 2.7);
@@ -1995,7 +2015,11 @@
       const nameFontSize = Math.max(13, Math.round(fontSize * 0.87));
       const nameGap = Math.round(fontSize * 0.35);
       const align = (charObj && charObj.align === 'right') ? 'right' : 'left';
-      const avatarEnabled = !!(charObj && charObj.profileImageEnabled && charObj.profileImage);
+      // When the same character speaks two or more times in a row, the name (and
+      // profile picture, if enabled) is hidden by default on the repeat messages
+      // -- unless the user explicitly overrides this per-message (showNameOverride).
+      const showNameAvatar = !suppressNameAvatar;
+      const avatarEnabled = showNameAvatar && !!(charObj && charObj.profileImageEnabled && charObj.profileImage);
 
       const maxBubbleOuterWidth = Math.round(printableWidth * 0.72);
       const maxTextWidth = Math.max(20, maxBubbleOuterWidth - bubblePadX * 2);
@@ -2014,7 +2038,7 @@
 
       mctx.font = `bold ${nameFontSize}px ${conf.fontFamily}`;
       const nameLineHeight = Math.round(nameFontSize * 1.3);
-      const nameBlockHeight = nameLineHeight + nameGap;
+      const nameBlockHeight = showNameAvatar ? (nameLineHeight + nameGap) : 0;
 
       const contentHeight = nameBlockHeight + bubbleHeight;
       const totalHeight = avatarEnabled ? Math.max(contentHeight, avatarSize) : contentHeight;
@@ -2025,7 +2049,7 @@
         char: d.char,
         align, avatarEnabled,
         avatarImg: null, // filled in by caller (needs preloaded image map)
-        bodyLines, nameLines: [d.char],
+        bodyLines, nameLines: showNameAvatar ? [d.char] : [],
         fontSize, lineHeight, avatarSize, avatarGap, bubblePadX, bubblePadY,
         nameFontSize, nameGap, nameLineHeight,
         bubbleWidth, bubbleHeight,
@@ -2039,16 +2063,20 @@
     // Splits an oversized chat bubble's body lines into page-sized chunks (mirrors the
     // plain-format "itemHeight > printableHeight" splitting behavior). Only the first
     // chunk keeps the name label; avatar visibility is preserved for all chunks.
-    function splitChatBubbleForPages(mctx, d, conf, charObj, printableWidth, printableHeight, allBodyLines) {
+    function splitChatBubbleForPages(mctx, d, conf, charObj, printableWidth, printableHeight, allBodyLines, suppressNameAvatar) {
       const items = [];
       let remaining = [...allBodyLines];
       let first = true;
       while (remaining.length > 0) {
+        // The first chunk shows the name/avatar according to suppressNameAvatar (i.e. the
+        // usual "hide on consecutive same-speaker" rule); every subsequent chunk of the
+        // same oversized message is a continuation, so it never repeats the name/avatar.
+        const chunkSuppress = first ? suppressNameAvatar : true;
         // Binary-search-ish: try progressively larger chunks until it no longer fits
         let lo = 1, hi = remaining.length, best = 1;
         while (lo <= hi) {
           const mid = Math.floor((lo + hi) / 2);
-          const testItem = measureChatBubble(mctx, d, conf, charObj, printableWidth, remaining.slice(0, mid));
+          const testItem = measureChatBubble(mctx, d, conf, charObj, printableWidth, remaining.slice(0, mid), chunkSuppress);
           if (testItem.calculatedHeight <= printableHeight) {
             best = mid;
             lo = mid + 1;
@@ -2057,8 +2085,7 @@
           }
         }
         const chunk = remaining.splice(0, Math.max(1, best));
-        const item = measureChatBubble(mctx, d, conf, charObj, printableWidth, chunk);
-        if (!first) item.nameLines = [];
+        const item = measureChatBubble(mctx, d, conf, charObj, printableWidth, chunk, chunkSuppress);
         first = false;
         items.push(item);
       }
@@ -2087,7 +2114,8 @@
         bubbleX = padL + (avatarEnabled ? avatarSize + avatarGap : 0);
       }
 
-      const contentHeight = nameLineHeight + nameGap + bubbleHeight;
+      const nameBlockHeight = nameLines.length > 0 ? (nameLineHeight + nameGap) : 0;
+      const contentHeight = nameBlockHeight + bubbleHeight;
       const blockTop = yPos + (item.calculatedHeight - contentHeight) / 2;
       // Avatar is pinned to the top of the content block (name+bubble) instead of being
       // vertically centered, so it stays fixed at the top even as the bubble grows tall.
@@ -2128,7 +2156,7 @@
         ctx.restore();
       }
 
-      const bubbleTop = blockTop + nameLineHeight + nameGap;
+      const bubbleTop = blockTop + nameBlockHeight;
       const radius = Math.round(fontSize * 0.55);
 
       // Bubble background (rounded rect)
@@ -2259,6 +2287,11 @@
       let pages = [];
       let currentPageLines = [];
       let currentHeight = 0;
+      // Tracks the previous chat-bubble speaker (chat format only) so that when the
+      // same character speaks two or more times in a row, the name (and profile
+      // picture) is hidden by default on the repeat messages below the first one.
+      // Any page break, inserted image, or narrator line resets the streak.
+      let prevChatSpeaker = null;
 
       for (let i = 0; i < dList.length; i++) {
         const d = dList[i];
@@ -2269,6 +2302,7 @@
             currentPageLines = [];
             currentHeight = 0;
           }
+          prevChatSpeaker = null;
           continue;
         }
 
@@ -2306,6 +2340,7 @@
           }
           currentHeight += (currentPageLines.length > 0 ? conf.lineSpacing : 0) + imgItem.calculatedHeight;
           currentPageLines.push(imgItem);
+          prevChatSpeaker = null;
           continue;
         }
 
@@ -2314,7 +2349,11 @@
         // --- CHAT BUBBLE FORMAT ---
         if (isChatFormat && !isNarrative) {
           const charObj = state.characters.find(c => c.name === d.char);
-          const item = measureChatBubble(mctx, d, conf, charObj, printableWidth);
+          // Hide the name/avatar by default when this is a 2nd+ consecutive message
+          // from the same speaker, unless the user turned on "이름 보이기" for this line.
+          const isConsecutiveSameSpeaker = prevChatSpeaker === d.char;
+          const suppressNameAvatar = isConsecutiveSameSpeaker && !d.showNameOverride;
+          const item = measureChatBubble(mctx, d, conf, charObj, printableWidth, null, suppressNameAvatar);
           const neededSpacing = currentPageLines.length > 0 ? conf.lineSpacing : 0;
 
           if (currentHeight + neededSpacing + item.calculatedHeight > printableHeight) {
@@ -2324,16 +2363,22 @@
               currentHeight = 0;
             }
             if (item.calculatedHeight > printableHeight) {
-              const splitItems = splitChatBubbleForPages(mctx, d, conf, charObj, printableWidth, printableHeight, item.bodyLines);
+              const splitItems = splitChatBubbleForPages(mctx, d, conf, charObj, printableWidth, printableHeight, item.bodyLines, suppressNameAvatar);
               splitItems.forEach(splitItem => pages.push([splitItem]));
+              prevChatSpeaker = d.char;
               continue;
             }
           }
           currentHeight += neededSpacing + item.calculatedHeight;
+          prevChatSpeaker = d.char;
           currentPageLines.push(item);
           continue;
         }
-        
+
+        // Non-chat-format dialogue (or a narrator line even while in chat format)
+        // breaks the "consecutive same speaker" streak.
+        prevChatSpeaker = null;
+
         let characterNameLines = [];
         if (!isNarrative) {
           characterNameLines = wrapText(mctx, d.char, leftColWidth, conf.fontSize, conf.fontFamily, conf.wrapMode);
